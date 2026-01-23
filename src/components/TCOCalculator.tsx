@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Calculator, Truck, FileText, DollarSign } from "lucide-react";
-
+import astraLogo from "@/assets/astra_logo.png";
 const PRODUCT_TYPES = [
   { value: "elf", label: "ELF Type", basePrice: 350000000 },
   { value: "traga", label: "TRAGA Type", basePrice: 450000000 },
@@ -176,14 +176,14 @@ const TCOCalculator = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Truck className="h-10 w-10 text-primary" />
+          <div className="flex flex-col items-center gap-4 mb-4">
+            <img src={astraLogo} alt="Astra Isuzu Logo" className="h-16 md:h-20 w-auto" />
             <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-              TCO Calculator
+              Astra Isuzu TCO Calculator
             </h1>
           </div>
           <p className="text-muted-foreground text-lg">
-            Total Cost of Ownership Calculator for Commercial Vehicles
+            Total Cost of Ownership Calculator for Product and Service of Astra Isuzu dealership
           </p>
         </div>
 
