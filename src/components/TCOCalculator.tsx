@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Calculator, Truck, FileText, DollarSign, Sparkles } from "lucide-react";
+import { Calculator, Truck, FileText, DollarSign, Sparkles, Fuel } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import astraLogo from "@/assets/astra_logo.png";
 const PRODUCT_TYPES = [
@@ -74,6 +74,8 @@ const LEASE_PERIOD_OPTIONS = [
 ];
 
 const TAX_AMOUNT = 1000000; // Fixed 1 million IDR
+const DEFAULT_GASOLINE_PRICE = 6800; // Rp. 6800/liter
+const DEFAULT_FUEL_EFFICIENCY = 8; // km/liter (default assumption)
 
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat("id-ID", {
@@ -88,14 +90,43 @@ const formatNumberId = (value: number): string => {
   return Math.round(value).toLocaleString("id-ID");
 };
 
-const generateMockAISummary = (costPerMonth: number): string => {
-  const costPerMonthFormatted = formatNumberId(costPerMonth);
+type SummaryCalculations = {
+  costPerMonth: number;
+  totalDriverSalary: number;
+  totalGasolineCost: number;
+  totalMaintenance: number;
+  costPerYear: number;
+  totalKm: number;
+  lifecycleYears: number;
+};
+
+const generateMockAISummary = (calc: SummaryCalculations): string => {
+  const costPerMonthFormatted = formatNumberId(calc.costPerMonth);
   const dailyRevenue = 1000000;
   const operatingDaysPerMonth = 25;
   const monthlyRevenue = dailyRevenue * operatingDaysPerMonth;
-  const netProfit = monthlyRevenue - costPerMonth;
+  const netProfit = monthlyRevenue - calc.costPerMonth;
   const netProfitFormatted = formatNumberId(netProfit);
-  return `Cost yang dikeluarkan setiap bulan nya yaitu ${costPerMonthFormatted} rupiah yang meliputi biaya owning dan biaya operasional. Misalnya unit beroperasi selama ${operatingDaysPerMonth} hari/bulan dan mendapatkan setidaknya Rp. ${formatNumberId(dailyRevenue)} per-hari, maka keuntungan bersih yang anda dapatkan perbulan nya yaitu Rp. ${formatNumberId(monthlyRevenue)} - Rp. ${costPerMonthFormatted} yaitu sebesar Rp. ${netProfitFormatted} rupiah`;
+
+  const operationalParts: string[] = [];
+  if (calc.totalDriverSalary > 0) {
+    const driverPerMonth = calc.totalDriverSalary / (calc.lifecycleYears * 12);
+    operationalParts.push(`gaji sopir (Rp. ${formatNumberId(driverPerMonth)}/bulan)`);
+  }
+  if (calc.totalGasolineCost > 0) {
+    const gasPerMonth = calc.totalGasolineCost / (calc.lifecycleYears * 12);
+    operationalParts.push(`BBM (Rp. ${formatNumberId(gasPerMonth)}/bulan)`);
+  }
+  if (calc.totalMaintenance > 0) {
+    const maintPerMonth = calc.totalMaintenance / (calc.lifecycleYears * 12);
+    operationalParts.push(`maintenance (Rp. ${formatNumberId(maintPerMonth)}/bulan)`);
+  }
+  const operationalPhrase =
+    operationalParts.length > 0
+      ? ` Biaya operasional meliputi: ${operationalParts.join(", ")}.`
+      : "";
+
+  return `Total biaya per bulan yaitu Rp. ${costPerMonthFormatted} yang mencakup biaya kepemilikan (cicilan, asuransi, pajak) dan biaya operasional.${operationalPhrase} Dengan asumsi unit beroperasi ${operatingDaysPerMonth} hari/bulan dan revenue minimal Rp. ${formatNumberId(dailyRevenue)}/hari, revenue bulanan Rp. ${formatNumberId(monthlyRevenue)} dikurangi biaya bulanan Rp. ${costPerMonthFormatted} menghasilkan keuntungan bersih per bulan sekitar Rp. ${netProfitFormatted}.`;
 };
 
 const TCOCalculator = () => {
@@ -111,6 +142,10 @@ const TCOCalculator = () => {
   const [interestRate, setInterestRate] = useState("0.17");
   const [leasePeriod, setLeasePeriod] = useState("5");
   const [customPrice, setCustomPrice] = useState("");
+  const [monthlyDriverSalary, setMonthlyDriverSalary] = useState("");
+  const [gasolinePrice, setGasolinePrice] = useState(DEFAULT_GASOLINE_PRICE.toString());
+  const [fuelEfficiency, setFuelEfficiency] = useState(DEFAULT_FUEL_EFFICIENCY.toString());
+  const [annualMaintenanceBudget, setAnnualMaintenanceBudget] = useState("10000000");
 
   const calculations = useMemo(() => {
     const selectedProduct = PRODUCT_TYPES.find((p) => p.value === productType);
@@ -122,6 +157,10 @@ const TCOCalculator = () => {
     const leaseYears = parseInt(leasePeriod);
     const lifecycleYears = parseInt(lifecycle);
     const annualKm = parseInt(kmPerYear);
+    const driverSalary = monthlyDriverSalary ? parseFloat(monthlyDriverSalary) : 0;
+    const gasPrice = gasolinePrice ? parseFloat(gasolinePrice) : DEFAULT_GASOLINE_PRICE;
+    const fuelEff = fuelEfficiency ? parseFloat(fuelEfficiency) : DEFAULT_FUEL_EFFICIENCY;
+    const maintBudget = annualMaintenanceBudget ? parseFloat(annualMaintenanceBudget) : 0;
 
     // Calculations
     const downPaymentAmount = vehiclePrice * dpRate;
@@ -141,7 +180,15 @@ const TCOCalculator = () => {
 
     // Estimated maintenance cost (varies by product type)
     const maintenanceCostPerKm = productType === "giga" ? 1500 : productType === "traga" ? 1200 : 1000;
-    const totalMaintenance = totalKm * maintenanceCostPerKm;
+    const maintenanceFromKm = totalKm * maintenanceCostPerKm;
+    
+    // Operational costs
+    const totalDriverSalary = driverSalary * 12 * lifecycleYears;
+    const totalGasolineCost = (totalKm / fuelEff) * gasPrice;
+    const totalMaintenanceBudget = maintBudget * lifecycleYears;
+    
+    // Use the higher of maintenance from km or maintenance budget
+    const totalMaintenance = Math.max(maintenanceFromKm, totalMaintenanceBudget);
 
     // Total Cost of Ownership
     const totalCostOfOwnership =
@@ -149,7 +196,9 @@ const TCOCalculator = () => {
       totalLoanPayment +
       totalInsurance +
       totalTax +
-      totalMaintenance;
+      totalMaintenance +
+      totalDriverSalary +
+      totalGasolineCost;
 
     const costPerKm = totalKm > 0 ? totalCostOfOwnership / totalKm : 0;
     const costPerYear = lifecycleYears > 0 ? totalCostOfOwnership / lifecycleYears : 0;
@@ -169,10 +218,14 @@ const TCOCalculator = () => {
       totalTax,
       totalKm,
       totalMaintenance,
+      totalDriverSalary,
+      totalGasolineCost,
+      totalMaintenanceBudget,
       totalCostOfOwnership,
       costPerKm,
       costPerYear,
       costPerMonth,
+      lifecycleYears,
     };
   }, [
     productType,
@@ -184,6 +237,10 @@ const TCOCalculator = () => {
     lifecycle,
     kmPerYear,
     customPrice,
+    monthlyDriverSalary,
+    gasolinePrice,
+    fuelEfficiency,
+    annualMaintenanceBudget,
   ]);
 
   return (
@@ -320,6 +377,65 @@ const TCOCalculator = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Operational Parameters */}
+            <Card className="shadow-md">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Fuel className="h-5 w-5" />
+                  Operational Parameters
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="monthlyDriverSalary">Monthly Driver Salary (IDR)</Label>
+                  <Input
+                    id="monthlyDriverSalary"
+                    type="number"
+                    placeholder="e.g., 5000000"
+                    value={monthlyDriverSalary}
+                    onChange={(e) => setMonthlyDriverSalary(e.target.value)}
+                    className="bg-card"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gasolinePrice">Gasoline Price (IDR/liter)</Label>
+                  <Input
+                    id="gasolinePrice"
+                    type="number"
+                    placeholder={`Default: ${formatNumberId(DEFAULT_GASOLINE_PRICE)}`}
+                    value={gasolinePrice}
+                    onChange={(e) => setGasolinePrice(e.target.value)}
+                    className="bg-card"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fuelEfficiency">Fuel Efficiency (km/liter)</Label>
+                  <Input
+                    id="fuelEfficiency"
+                    type="number"
+                    placeholder={`Default: ${DEFAULT_FUEL_EFFICIENCY}`}
+                    value={fuelEfficiency}
+                    onChange={(e) => setFuelEfficiency(e.target.value)}
+                    className="bg-card"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="annualMaintenanceBudget">Maintenance Budget (IDR/year)</Label>
+                  <Input
+                    id="annualMaintenanceBudget"
+                    type="number"
+                    placeholder="e.g., 10000000"
+                    value={annualMaintenanceBudget}
+                    onChange={(e) => setAnnualMaintenanceBudget(e.target.value)}
+                    className="bg-card"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -544,6 +660,22 @@ const TCOCalculator = () => {
                         {formatCurrency(calculations.totalMaintenance)}
                       </span>
                     </div>
+                    {calculations.totalDriverSalary > 0 && (
+                      <div className="flex justify-between">
+                        <span>Total Driver Salary</span>
+                        <span className="font-medium">
+                          {formatCurrency(calculations.totalDriverSalary)}
+                        </span>
+                      </div>
+                    )}
+                    {calculations.totalGasolineCost > 0 && (
+                      <div className="flex justify-between">
+                        <span>Total Gasoline Cost</span>
+                        <span className="font-medium">
+                          {formatCurrency(calculations.totalGasolineCost)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -600,7 +732,15 @@ const TCOCalculator = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {generateMockAISummary(calculations.costPerMonth)}
+                  {generateMockAISummary({
+                  costPerMonth: calculations.costPerMonth,
+                  totalDriverSalary: calculations.totalDriverSalary,
+                  totalGasolineCost: calculations.totalGasolineCost,
+                  totalMaintenance: calculations.totalMaintenance,
+                  costPerYear: calculations.costPerYear,
+                  totalKm: calculations.totalKm,
+                  lifecycleYears: calculations.lifecycleYears,
+                })}
                 </p>
               </CardContent>
             </Card>
