@@ -4,8 +4,19 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Calculator, Truck, FileText, DollarSign, Sparkles, Fuel } from "lucide-react";
+import { Calculator, Truck, FileText, DollarSign, Sparkles, Fuel, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+// Extend jsPDF type to include lastAutoTable
+declare module "jspdf" {
+  interface jsPDF {
+    lastAutoTable: {
+      finalY: number;
+    };
+  }
+}
 import astraLogo from "@/assets/astra_logo.png";
 const PRODUCT_TYPES = [
   { value: "elf", label: "ELF Type", basePrice: 350000000 },
@@ -127,6 +138,296 @@ const generateMockAISummary = (calc: SummaryCalculations): string => {
       : "";
 
   return `Total biaya per bulan yaitu Rp. ${costPerMonthFormatted} yang mencakup biaya kepemilikan (cicilan, asuransi, pajak) dan biaya operasional.${operationalPhrase} Dengan asumsi unit beroperasi ${operatingDaysPerMonth} hari/bulan dan revenue minimal Rp. ${formatNumberId(dailyRevenue)}/hari, revenue bulanan Rp. ${formatNumberId(monthlyRevenue)} dikurangi biaya bulanan Rp. ${costPerMonthFormatted} menghasilkan keuntungan bersih per bulan sekitar Rp. ${netProfitFormatted}.`;
+};
+
+type CalculationsResult = {
+  vehiclePrice: number;
+  downPaymentAmount: number;
+  loanAmount: number;
+  totalInterest: number;
+  totalLoanPayment: number;
+  monthlyPayment: number;
+  residualValue: number;
+  depreciationCost: number;
+  annualInsurance: number;
+  totalInsurance: number;
+  totalTax: number;
+  totalKm: number;
+  totalMaintenance: number;
+  totalDriverSalary: number;
+  totalGasolineCost: number;
+  totalMaintenanceBudget: number;
+  totalCostOfOwnership: number;
+  costPerKm: number;
+  costPerYear: number;
+  costPerMonth: number;
+  lifecycleYears: number;
+};
+
+type PDFData = {
+  // Inputs
+  productType: string;
+  registration: string;
+  plateColor: string;
+  application: string;
+  lifecycle: string;
+  kmPerYear: string;
+  downPayment: string;
+  depreciation: string;
+  insurance: string;
+  interestRate: string;
+  leasePeriod: string;
+  customPrice: string;
+  monthlyDriverSalary: string;
+  gasolinePrice: string;
+  fuelEfficiency: string;
+  annualMaintenanceBudget: string;
+  // Calculations
+  calculations: CalculationsResult;
+};
+
+const generatePDFReport = (data: PDFData) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 15;
+  let yPos = margin;
+
+  // Helper function to add a new page if needed
+  const checkPageBreak = (requiredSpace: number) => {
+    if (yPos + requiredSpace > doc.internal.pageSize.getHeight() - margin) {
+      doc.addPage();
+      yPos = margin;
+    }
+  };
+
+  // Header
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.text("Astra Isuzu TCO Calculator", pageWidth / 2, yPos, { align: "center" });
+  yPos += 10;
+
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "normal");
+  doc.text("Total Cost of Ownership Report", pageWidth / 2, yPos, { align: "center" });
+  yPos += 8;
+
+  const reportDate = new Date().toLocaleDateString("id-ID", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  doc.setFontSize(10);
+  doc.text(`Generated on: ${reportDate}`, pageWidth / 2, yPos, { align: "center" });
+  yPos += 15;
+
+  // Vehicle Configuration
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("Vehicle Configuration", margin, yPos);
+  yPos += 8;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const vehicleConfig = [
+    ["Product Type", PRODUCT_TYPES.find((p) => p.value === data.productType)?.label || data.productType],
+    ["Vehicle Price", formatCurrency(data.calculations.vehiclePrice)],
+    ["Registration", REGISTRATION_TYPES.find((r) => r.value === data.registration)?.label || data.registration],
+    ["Plate Color", PLATE_COLORS.find((p) => p.value === data.plateColor)?.label || data.plateColor],
+    ["Application", APPLICATIONS.find((a) => a.value === data.application)?.label || data.application],
+    ["Lifecycle", `${data.lifecycle} Years`],
+    ["Kilometers per Year", `${parseInt(data.kmPerYear).toLocaleString("id-ID")} km`],
+  ];
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [["Parameter", "Value"]],
+    body: vehicleConfig,
+    theme: "striped",
+    headStyles: { fillColor: [0, 100, 200], textColor: 255, fontStyle: "bold" },
+    styles: { fontSize: 9 },
+    margin: { left: margin, right: margin },
+  });
+  yPos = doc.lastAutoTable.finalY + 10;
+
+  // Financial Parameters
+  checkPageBreak(50);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("Financial Parameters", margin, yPos);
+  yPos += 8;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const financialParams = [
+    ["Down Payment", `${(parseFloat(data.downPayment) * 100).toFixed(0)}%`],
+    ["Depreciation", `${(parseFloat(data.depreciation) * 100).toFixed(0)}%`],
+    ["Insurance Rate", `${(parseFloat(data.insurance) * 100).toFixed(2)}%`],
+    ["Interest Rate", `${(parseFloat(data.interestRate) * 100).toFixed(0)}%`],
+    ["Lease Period", `${data.leasePeriod} Years`],
+    ["Annual Tax", formatCurrency(TAX_AMOUNT)],
+  ];
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [["Parameter", "Value"]],
+    body: financialParams,
+    theme: "striped",
+    headStyles: { fillColor: [0, 100, 200], textColor: 255, fontStyle: "bold" },
+    styles: { fontSize: 9 },
+    margin: { left: margin, right: margin },
+  });
+  yPos = doc.lastAutoTable.finalY + 10;
+
+  // Operational Parameters
+  checkPageBreak(50);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("Operational Parameters", margin, yPos);
+  yPos += 8;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const operationalParams = [
+    ["Monthly Driver Salary", data.monthlyDriverSalary ? formatCurrency(parseFloat(data.monthlyDriverSalary)) : "Not set"],
+    ["Gasoline Price", formatCurrency(parseFloat(data.gasolinePrice)) + "/liter"],
+    ["Fuel Efficiency", `${data.fuelEfficiency} km/liter`],
+    ["Annual Maintenance Budget", formatCurrency(parseFloat(data.annualMaintenanceBudget))],
+  ];
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [["Parameter", "Value"]],
+    body: operationalParams,
+    theme: "striped",
+    headStyles: { fillColor: [0, 100, 200], textColor: 255, fontStyle: "bold" },
+    styles: { fontSize: 9 },
+    margin: { left: margin, right: margin },
+  });
+  yPos = doc.lastAutoTable.finalY + 10;
+
+  // TCO Summary
+  checkPageBreak(60);
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text("Total Cost of Ownership Summary", margin, yPos);
+  yPos += 10;
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text(formatCurrency(data.calculations.totalCostOfOwnership), margin, yPos);
+  yPos += 10;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const summaryData = [
+    ["Cost per Year", formatCurrency(data.calculations.costPerYear)],
+    ["Cost per Month", formatCurrency(data.calculations.costPerMonth)],
+    ["Cost per Kilometer", formatCurrency(data.calculations.costPerKm)],
+  ];
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [["Metric", "Value"]],
+    body: summaryData,
+    theme: "striped",
+    headStyles: { fillColor: [0, 150, 0], textColor: 255, fontStyle: "bold" },
+    styles: { fontSize: 10 },
+    margin: { left: margin, right: margin },
+  });
+  yPos = doc.lastAutoTable.finalY + 10;
+
+  // Cost Breakdown
+  checkPageBreak(80);
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("Cost Breakdown", margin, yPos);
+  yPos += 8;
+
+  const costBreakdown = [
+    ["Vehicle Price", formatCurrency(data.calculations.vehiclePrice)],
+    ["Down Payment", formatCurrency(data.calculations.downPaymentAmount)],
+    ["Loan Amount", formatCurrency(data.calculations.loanAmount)],
+    ["Total Interest", formatCurrency(data.calculations.totalInterest)],
+    ["Monthly Payment", formatCurrency(data.calculations.monthlyPayment)],
+    ["Total Insurance", formatCurrency(data.calculations.totalInsurance)],
+    ["Total Tax", formatCurrency(data.calculations.totalTax)],
+    ["Total Maintenance", formatCurrency(data.calculations.totalMaintenance)],
+  ];
+
+  if (data.calculations.totalDriverSalary > 0) {
+    costBreakdown.push(["Total Driver Salary", formatCurrency(data.calculations.totalDriverSalary)]);
+  }
+  if (data.calculations.totalGasolineCost > 0) {
+    costBreakdown.push(["Total Gasoline Cost", formatCurrency(data.calculations.totalGasolineCost)]);
+  }
+
+  costBreakdown.push(
+    ["Depreciation Cost", formatCurrency(data.calculations.depreciationCost)],
+    ["Residual Value", formatCurrency(data.calculations.residualValue)],
+    ["Total Kilometers", `${data.calculations.totalKm.toLocaleString("id-ID")} km`]
+  );
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [["Item", "Amount"]],
+    body: costBreakdown,
+    theme: "striped",
+    headStyles: { fillColor: [0, 100, 200], textColor: 255, fontStyle: "bold" },
+    styles: { fontSize: 9 },
+    margin: { left: margin, right: margin },
+  });
+  yPos = doc.lastAutoTable.finalY + 10;
+
+  // AI Summary
+  checkPageBreak(40);
+  const summaryCalc: SummaryCalculations = {
+    costPerMonth: data.calculations.costPerMonth,
+    totalDriverSalary: data.calculations.totalDriverSalary,
+    totalGasolineCost: data.calculations.totalGasolineCost,
+    totalMaintenance: data.calculations.totalMaintenance,
+    costPerYear: data.calculations.costPerYear,
+    totalKm: data.calculations.totalKm,
+    lifecycleYears: data.calculations.lifecycleYears,
+  };
+  const aiSummary = generateMockAISummary(summaryCalc);
+
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("Summary", margin, yPos);
+  yPos += 8;
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const splitSummary = doc.splitTextToSize(aiSummary, pageWidth - 2 * margin);
+  doc.text(splitSummary, margin, yPos);
+  yPos += splitSummary.length * 5 + 5;
+
+  // Footer
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.text(
+      `Page ${i} of ${totalPages}`,
+      pageWidth / 2,
+      doc.internal.pageSize.getHeight() - 10,
+      { align: "center" }
+    );
+    doc.text(
+      "Astra Isuzu TCO Calculator - Confidential",
+      pageWidth / 2,
+      doc.internal.pageSize.getHeight() - 5,
+      { align: "center" }
+    );
+  }
+
+  // Generate filename
+  const productLabel = PRODUCT_TYPES.find((p) => p.value === data.productType)?.label || "Vehicle";
+  const sanitizedLabel = productLabel.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_]/g, "");
+  const filename = `TCO_Report_${sanitizedLabel}_${new Date().toISOString().split("T")[0]}.pdf`;
+
+  doc.save(filename);
 };
 
 const TCOCalculator = () => {
@@ -574,6 +875,36 @@ const TCOCalculator = () => {
                       {formatCurrency(calculations.costPerKm)}
                     </span>
                   </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-primary-foreground/20">
+                  <Button
+                    onClick={() => {
+                      generatePDFReport({
+                        productType,
+                        registration,
+                        plateColor,
+                        application,
+                        lifecycle,
+                        kmPerYear,
+                        downPayment,
+                        depreciation,
+                        insurance,
+                        interestRate,
+                        leasePeriod,
+                        customPrice,
+                        monthlyDriverSalary,
+                        gasolinePrice,
+                        fuelEfficiency,
+                        annualMaintenanceBudget,
+                        calculations,
+                      });
+                    }}
+                    className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                    variant="outline"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PDF Report
+                  </Button>
                 </div>
               </CardContent>
             </Card>
