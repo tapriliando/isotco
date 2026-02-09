@@ -4,7 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Calculator, Truck, FileText, DollarSign } from "lucide-react";
+import { Calculator, Truck, FileText, DollarSign, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import astraLogo from "@/assets/astra_logo.png";
 const PRODUCT_TYPES = [
   { value: "elf", label: "ELF Type", basePrice: 350000000 },
@@ -81,6 +82,20 @@ const formatCurrency = (value: number): string => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
+};
+
+const formatNumberId = (value: number): string => {
+  return Math.round(value).toLocaleString("id-ID");
+};
+
+const generateMockAISummary = (costPerMonth: number): string => {
+  const costPerMonthFormatted = formatNumberId(costPerMonth);
+  const dailyRevenue = 1000000;
+  const operatingDaysPerMonth = 25;
+  const monthlyRevenue = dailyRevenue * operatingDaysPerMonth;
+  const netProfit = monthlyRevenue - costPerMonth;
+  const netProfitFormatted = formatNumberId(netProfit);
+  return `Cost yang dikeluarkan setiap bulan nya yaitu ${costPerMonthFormatted} rupiah yang meliputi biaya owning dan biaya operasional. Misalnya unit beroperasi selama ${operatingDaysPerMonth} hari/bulan dan mendapatkan setidaknya Rp. ${formatNumberId(dailyRevenue)} per-hari, maka keuntungan bersih yang anda dapatkan perbulan nya yaitu Rp. ${formatNumberId(monthlyRevenue)} - Rp. ${costPerMonthFormatted} yaitu sebesar Rp. ${netProfitFormatted} rupiah`;
 };
 
 const TCOCalculator = () => {
@@ -569,6 +584,24 @@ const TCOCalculator = () => {
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* AI Summary Generated */}
+            <Card className="shadow-md border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  AI Summary Generated
+                  <Badge variant="secondary" className="ml-auto text-xs font-normal">
+                    AI Generated
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {generateMockAISummary(calculations.costPerMonth)}
+                </p>
               </CardContent>
             </Card>
           </div>
