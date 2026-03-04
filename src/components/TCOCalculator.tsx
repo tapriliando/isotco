@@ -1265,7 +1265,7 @@ const TCOCalculator = () => {
                           Pelatihan Pengemudi
                         </Label>
                         <p className="text-xs text-muted-foreground">
-                          Mengurangi biaya BBM hingga 18% berkat gaya mengemudi yang lebih efisien.
+                          Mengurangi biaya BBM hingga 18% berkat cara mengemudi yang lebih efisien.
                         </p>
                       </div>
                     </div>
@@ -1537,7 +1537,7 @@ const TCOCalculator = () => {
                         }
                       }}
                     >
-                      Salin Ringkasan Angka Utama
+                      Salin Ringkasan
                     </Button>
                     {clipboardStatusMessage && (
                       <p className="text-xs text-primary-foreground/80">
@@ -1691,13 +1691,13 @@ const TCOCalculator = () => {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span>TCO Before Astra Isuzu Advantages</span>
+                      <span>TCO Before Astra Isuzu</span>
                       <span className="font-medium">
                         {formatCurrency(calculations.totalCostOfOwnershipBeforeAdvantages)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span>TCO After Astra Isuzu Advantages</span>
+                      <span>TCO After Astra Isuzu</span>
                       <span className="font-medium">
                         {formatCurrency(calculations.totalCostOfOwnership)}
                       </span>
