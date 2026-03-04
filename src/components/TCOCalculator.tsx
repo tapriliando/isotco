@@ -361,14 +361,18 @@ const generatePDFReport = (data: PDFData) => {
       "Total Savings from Astra Isuzu Advantages",
       formatCurrency(data.calculations.totalAstraAdvantagesSaving),
     ],
+    [
+      "Cost per Kilometer (Before)",
+      formatCurrency(data.calculations.costPerKmBeforeAdvantages),
+    ],
+    [
+      "Cost per Kilometer (After)",
+      formatCurrency(data.calculations.costPerKmAfterAdvantages),
+    ],
     ["Cost per Year (After)", formatCurrency(data.calculations.costPerYear)],
     [
       "Cost per Month (After)",
       formatCurrency(data.calculations.costPerMonth),
-    ],
-    [
-      "Cost per Kilometer (After)",
-      formatCurrency(data.calculations.costPerKm),
     ],
   ];
 
