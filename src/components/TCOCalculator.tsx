@@ -1440,7 +1440,7 @@ const TCOCalculator = () => {
                 <div className="mt-4 space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span className="text-primary-foreground/80">
-                      TCO Before Astra Isuzu Advantages
+                      TCO Before Astra Isuzu
                     </span>
                     <span className="font-semibold">
                       {formatCurrency(calculations.totalCostOfOwnershipBeforeAdvantages)}
@@ -1703,7 +1703,7 @@ const TCOCalculator = () => {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Total Savings from Astra Isuzu Advantages</span>
+                      <span>Total Savings from Astra Isuzu </span>
                       <span className="font-medium text-green-600">
                         {formatCurrency(calculations.totalAstraAdvantagesSaving)}
                       </span>
