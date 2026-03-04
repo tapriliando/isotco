@@ -158,6 +158,17 @@ type CalculationsResult = {
   totalDriverSalary: number;
   totalGasolineCost: number;
   totalMaintenanceBudget: number;
+  totalGasolineCostBeforeAdvantages: number;
+  totalGasolineCostAfterAdvantages: number;
+  totalCostOfOwnershipBeforeAdvantages: number;
+  totalCostOfOwnershipAfterAdvantages: number;
+  totalAstraAdvantagesSaving: number;
+  costPerKmBeforeAdvantages: number;
+  costPerKmAfterAdvantages: number;
+  costPerYearBeforeAdvantages: number;
+  costPerYearAfterAdvantages: number;
+  costPerMonthBeforeAdvantages: number;
+  costPerMonthAfterAdvantages: number;
   totalCostOfOwnership: number;
   costPerKm: number;
   costPerYear: number;
@@ -188,6 +199,12 @@ type PDFData = {
   serviceDiscount: string;
   partDiscount: string;
   materialDiscount: string;
+  extendedWarrantyEnabled: boolean;
+  driverTrainingEnabled: boolean;
+  santunanEnabled: boolean;
+  antiRustEnabled: boolean;
+  outletEfficiencyEnabled: boolean;
+  outletDowntimeEnabled: boolean;
   // Calculations
   calculations: CalculationsResult;
 };
@@ -322,15 +339,37 @@ const generatePDFReport = (data: PDFData) => {
 
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text(formatCurrency(data.calculations.totalCostOfOwnership), margin, yPos);
+  doc.text(
+    formatCurrency(data.calculations.totalCostOfOwnership),
+    margin,
+    yPos
+  );
   yPos += 10;
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   const summaryData = [
-    ["Cost per Year", formatCurrency(data.calculations.costPerYear)],
-    ["Cost per Month", formatCurrency(data.calculations.costPerMonth)],
-    ["Cost per Kilometer", formatCurrency(data.calculations.costPerKm)],
+    [
+      "TCO Before Astra Isuzu Advantages",
+      formatCurrency(data.calculations.totalCostOfOwnershipBeforeAdvantages),
+    ],
+    [
+      "TCO After Astra Isuzu Advantages",
+      formatCurrency(data.calculations.totalCostOfOwnership),
+    ],
+    [
+      "Total Savings from Astra Isuzu Advantages",
+      formatCurrency(data.calculations.totalAstraAdvantagesSaving),
+    ],
+    ["Cost per Year (After)", formatCurrency(data.calculations.costPerYear)],
+    [
+      "Cost per Month (After)",
+      formatCurrency(data.calculations.costPerMonth),
+    ],
+    [
+      "Cost per Kilometer (After)",
+      formatCurrency(data.calculations.costPerKm),
+    ],
   ];
 
   autoTable(doc, {
@@ -463,6 +502,12 @@ const TCOCalculator = () => {
   const [serviceDiscount, setServiceDiscount] = useState("");
   const [partDiscount, setPartDiscount] = useState("");
   const [materialDiscount, setMaterialDiscount] = useState("");
+  const [extendedWarrantyEnabled, setExtendedWarrantyEnabled] = useState(true);
+  const [driverTrainingEnabled, setDriverTrainingEnabled] = useState(true);
+  const [santunanEnabled, setSantunanEnabled] = useState(true);
+  const [antiRustEnabled, setAntiRustEnabled] = useState(true);
+  const [outletEfficiencyEnabled, setOutletEfficiencyEnabled] = useState(true);
+  const [outletDowntimeEnabled, setOutletDowntimeEnabled] = useState(true);
 
   const calculations = useMemo(() => {
     const selectedProduct = PRODUCT_TYPES.find((p) => p.value === productType);
@@ -513,23 +558,70 @@ const TCOCalculator = () => {
 
     // Operational costs
     const totalDriverSalary = driverSalary * 12 * lifecycleYears;
-    const totalGasolineCost = (totalKm / fuelEff) * gasPrice;
+    const totalGasolineCostBefore = (totalKm / fuelEff) * gasPrice;
     const totalMaintenanceBudget = annualMaintenanceTotal * lifecycleYears;
     const totalMaintenance = totalMaintenanceBudget;
 
-    // Total Cost of Ownership
-    const totalCostOfOwnership =
+    // Astra Isuzu advantages - savings
+    let extendedWarrantySaving = 0;
+    if (extendedWarrantyEnabled) {
+      if (productType === "giga") {
+        extendedWarrantySaving = 83250000;
+      } else if (productType === "elf") {
+        extendedWarrantySaving = 52160000;
+      } else if (productType === "traga") {
+        extendedWarrantySaving = 38800000;
+      }
+    }
+
+    const santunanSaving = santunanEnabled ? 20000000 : 0;
+    const antiRustSaving = antiRustEnabled ? 3500000 : 0;
+    const outletEfficiencySaving = outletEfficiencyEnabled ? 150012000 : 0;
+    const outletDowntimeSaving = outletDowntimeEnabled ? 1023867 : 0;
+
+    const totalGasolineCostAfter = driverTrainingEnabled
+      ? totalGasolineCostBefore * 0.82
+      : totalGasolineCostBefore;
+    const driverTrainingSaving = totalGasolineCostBefore - totalGasolineCostAfter;
+
+    const totalAstraAdvantagesSaving =
+      extendedWarrantySaving +
+      santunanSaving +
+      antiRustSaving +
+      outletEfficiencySaving +
+      outletDowntimeSaving +
+      driverTrainingSaving;
+
+    // Total Cost of Ownership (before and after Astra Isuzu advantages)
+    const totalCostOfOwnershipBefore =
       downPaymentAmount +
       totalLoanPayment +
       totalInsurance +
       totalTax +
       totalMaintenance +
       totalDriverSalary +
-      totalGasolineCost;
+      totalGasolineCostBefore;
 
-    const costPerKm = totalKm > 0 ? totalCostOfOwnership / totalKm : 0;
-    const costPerYear = lifecycleYears > 0 ? totalCostOfOwnership / lifecycleYears : 0;
-    const costPerMonth = costPerYear / 12;
+    const totalCostOfOwnershipAfter = Math.max(
+      totalCostOfOwnershipBefore - totalAstraAdvantagesSaving,
+      0
+    );
+
+    const costPerKmBefore = totalKm > 0 ? totalCostOfOwnershipBefore / totalKm : 0;
+    const costPerKmAfter = totalKm > 0 ? totalCostOfOwnershipAfter / totalKm : 0;
+    const costPerYearBefore =
+      lifecycleYears > 0 ? totalCostOfOwnershipBefore / lifecycleYears : 0;
+    const costPerYearAfter =
+      lifecycleYears > 0 ? totalCostOfOwnershipAfter / lifecycleYears : 0;
+    const costPerMonthBefore = costPerYearBefore / 12;
+    const costPerMonthAfter = costPerYearAfter / 12;
+
+    // For backward compatibility, keep "after advantages" as primary metrics
+    const totalCostOfOwnership = totalCostOfOwnershipAfter;
+    const totalGasolineCost = totalGasolineCostAfter;
+    const costPerKm = costPerKmAfter;
+    const costPerYear = costPerYearAfter;
+    const costPerMonth = costPerMonthAfter;
 
     return {
       vehiclePrice,
@@ -548,6 +640,17 @@ const TCOCalculator = () => {
       totalDriverSalary,
       totalGasolineCost,
       totalMaintenanceBudget,
+      totalGasolineCostBeforeAdvantages: totalGasolineCostBefore,
+      totalGasolineCostAfterAdvantages: totalGasolineCostAfter,
+      totalCostOfOwnershipBeforeAdvantages: totalCostOfOwnershipBefore,
+      totalCostOfOwnershipAfterAdvantages: totalCostOfOwnershipAfter,
+      totalAstraAdvantagesSaving,
+      costPerKmBeforeAdvantages: costPerKmBefore,
+      costPerKmAfterAdvantages: costPerKmAfter,
+      costPerYearBeforeAdvantages: costPerYearBefore,
+      costPerYearAfterAdvantages: costPerYearAfter,
+      costPerMonthBeforeAdvantages: costPerMonthBefore,
+      costPerMonthAfterAdvantages: costPerMonthAfter,
       totalCostOfOwnership,
       costPerKm,
       costPerYear,
@@ -576,6 +679,12 @@ const TCOCalculator = () => {
     serviceDiscount,
     partDiscount,
     materialDiscount,
+    extendedWarrantyEnabled,
+    driverTrainingEnabled,
+    santunanEnabled,
+    antiRustEnabled,
+    outletEfficiencyEnabled,
+    outletDowntimeEnabled,
   ]);
 
   return (
@@ -966,6 +1075,143 @@ const TCOCalculator = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Astra Isuzu Advantages */}
+            <Card className="shadow-md">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Sparkles className="h-5 w-5" />
+                  Astra Isuzu Advantages
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="extendedWarrantyEnabled"
+                      checked={extendedWarrantyEnabled}
+                      onCheckedChange={(checked) =>
+                        setExtendedWarrantyEnabled(checked === true)
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <Label htmlFor="extendedWarrantyEnabled" className="font-medium">
+                        Extended Warranty
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Reduces operational cost depending on product type (GIGA, ELF, TRAGA).
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="driverTrainingEnabled"
+                      checked={driverTrainingEnabled}
+                      onCheckedChange={(checked) =>
+                        setDriverTrainingEnabled(checked === true)
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <Label htmlFor="driverTrainingEnabled" className="font-medium">
+                        Driver Training
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Reduces gasoline cost by 18%.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="santunanEnabled"
+                      checked={santunanEnabled}
+                      onCheckedChange={(checked) =>
+                        setSantunanEnabled(checked === true)
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <Label htmlFor="santunanEnabled" className="font-medium">
+                        Santunan Driver (Driver Compensation)
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Reduces operational cost by Rp 20.000.000.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="antiRustEnabled"
+                      checked={antiRustEnabled}
+                      onCheckedChange={(checked) =>
+                        setAntiRustEnabled(checked === true)
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <Label htmlFor="antiRustEnabled" className="font-medium">
+                        Anti-rust
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Reduces operational cost by Rp 3.500.000.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="outletEfficiencyEnabled"
+                      checked={outletEfficiencyEnabled}
+                      onCheckedChange={(checked) =>
+                        setOutletEfficiencyEnabled(checked === true)
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <Label htmlFor="outletEfficiencyEnabled" className="font-medium">
+                        Astra Isuzu Outlet Networks (Efficiency of Nearest Outlet Reach)
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Reduces operational cost by Rp 150.012.000.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="outletDowntimeEnabled"
+                      checked={outletDowntimeEnabled}
+                      onCheckedChange={(checked) =>
+                        setOutletDowntimeEnabled(checked === true)
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <Label htmlFor="outletDowntimeEnabled" className="font-medium">
+                        Astra Isuzu Outlet Networks (Cost of Avoidance Downtime)
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Reduces operational cost by Rp 1.023.867.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Results Section */}
@@ -1002,6 +1248,24 @@ const TCOCalculator = () => {
                     </span>
                   </div>
                 </div>
+                <div className="mt-4 space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-primary-foreground/80">
+                      TCO Before Astra Isuzu Advantages
+                    </span>
+                    <span className="font-semibold">
+                      {formatCurrency(calculations.totalCostOfOwnershipBeforeAdvantages)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-primary-foreground/80">
+                      Savings from Astra Isuzu Advantages
+                    </span>
+                    <span className="font-semibold">
+                      {formatCurrency(calculations.totalAstraAdvantagesSaving)}
+                    </span>
+                  </div>
+                </div>
                 <div className="mt-4 pt-4 border-t border-primary-foreground/20">
                   <Button
                     onClick={() => {
@@ -1027,6 +1291,12 @@ const TCOCalculator = () => {
                         serviceDiscount,
                         partDiscount,
                         materialDiscount,
+                        extendedWarrantyEnabled,
+                        driverTrainingEnabled,
+                        santunanEnabled,
+                        antiRustEnabled,
+                        outletEfficiencyEnabled,
+                        outletDowntimeEnabled,
                         calculations,
                       });
                     }}
@@ -1176,6 +1446,24 @@ const TCOCalculator = () => {
                         {calculations.totalKm.toLocaleString("id-ID")} km
                       </span>
                     </div>
+                    <div className="flex justify-between">
+                      <span>TCO Before Astra Isuzu Advantages</span>
+                      <span className="font-medium">
+                        {formatCurrency(calculations.totalCostOfOwnershipBeforeAdvantages)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>TCO After Astra Isuzu Advantages</span>
+                      <span className="font-medium">
+                        {formatCurrency(calculations.totalCostOfOwnership)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Total Savings from Astra Isuzu Advantages</span>
+                      <span className="font-medium text-green-600">
+                        {formatCurrency(calculations.totalAstraAdvantagesSaving)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -1195,14 +1483,14 @@ const TCOCalculator = () => {
               <CardContent>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {generateMockAISummary({
-                  costPerMonth: calculations.costPerMonth,
-                  totalDriverSalary: calculations.totalDriverSalary,
-                  totalGasolineCost: calculations.totalGasolineCost,
-                  totalMaintenance: calculations.totalMaintenance,
-                  costPerYear: calculations.costPerYear,
-                  totalKm: calculations.totalKm,
-                  lifecycleYears: calculations.lifecycleYears,
-                })}
+                    costPerMonth: calculations.costPerMonth,
+                    totalDriverSalary: calculations.totalDriverSalary,
+                    totalGasolineCost: calculations.totalGasolineCost,
+                    totalMaintenance: calculations.totalMaintenance,
+                    costPerYear: calculations.costPerYear,
+                    totalKm: calculations.totalKm,
+                    lifecycleYears: calculations.lifecycleYears,
+                  })}
                 </p>
               </CardContent>
             </Card>
