@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Calculator, Truck, FileText, DollarSign, Sparkles, Fuel, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -181,7 +182,12 @@ type PDFData = {
   monthlyDriverSalary: string;
   gasolinePrice: string;
   fuelEfficiency: string;
-  annualMaintenanceBudget: string;
+  annualServiceBudget: string;
+  annualPartBudget: string;
+  annualMaterialBudget: string;
+  serviceDiscount: string;
+  partDiscount: string;
+  materialDiscount: string;
   // Calculations
   calculations: CalculationsResult;
 };
@@ -291,7 +297,9 @@ const generatePDFReport = (data: PDFData) => {
     ["Monthly Driver Salary", data.monthlyDriverSalary ? formatCurrency(parseFloat(data.monthlyDriverSalary)) : "Not set"],
     ["Gasoline Price", formatCurrency(parseFloat(data.gasolinePrice)) + "/liter"],
     ["Fuel Efficiency", `${data.fuelEfficiency} km/liter`],
-    ["Annual Maintenance Budget", formatCurrency(parseFloat(data.annualMaintenanceBudget))],
+    ["Service Budget (Annual)", formatCurrency(parseFloat(data.annualServiceBudget))],
+    ["Part Budget (Annual)", formatCurrency(parseFloat(data.annualPartBudget))],
+    ["Material Budget (Annual)", formatCurrency(parseFloat(data.annualMaterialBudget))],
   ];
 
   autoTable(doc, {
@@ -446,11 +454,19 @@ const TCOCalculator = () => {
   const [monthlyDriverSalary, setMonthlyDriverSalary] = useState("");
   const [gasolinePrice, setGasolinePrice] = useState(DEFAULT_GASOLINE_PRICE.toString());
   const [fuelEfficiency, setFuelEfficiency] = useState(DEFAULT_FUEL_EFFICIENCY.toString());
-  const [annualMaintenanceBudget, setAnnualMaintenanceBudget] = useState("10000000");
+  const [annualServiceBudget, setAnnualServiceBudget] = useState("5000000");
+  const [annualPartBudget, setAnnualPartBudget] = useState("3000000");
+  const [annualMaterialBudget, setAnnualMaterialBudget] = useState("2000000");
+  const [serviceDiscountEnabled, setServiceDiscountEnabled] = useState(false);
+  const [partDiscountEnabled, setPartDiscountEnabled] = useState(false);
+  const [materialDiscountEnabled, setMaterialDiscountEnabled] = useState(false);
+  const [serviceDiscount, setServiceDiscount] = useState("");
+  const [partDiscount, setPartDiscount] = useState("");
+  const [materialDiscount, setMaterialDiscount] = useState("");
 
   const calculations = useMemo(() => {
     const selectedProduct = PRODUCT_TYPES.find((p) => p.value === productType);
-    const vehiclePrice = customPrice ? parseFloat(customPrice) : (selectedProduct?.basePrice || 0);
+    const vehiclePrice = customPrice ? parseFloat(customPrice) : 0;
     const dpRate = parseFloat(downPayment);
     const depRate = parseFloat(depreciation);
     const insRate = parseFloat(insurance);
@@ -461,7 +477,23 @@ const TCOCalculator = () => {
     const driverSalary = monthlyDriverSalary ? parseFloat(monthlyDriverSalary) : 0;
     const gasPrice = gasolinePrice ? parseFloat(gasolinePrice) : DEFAULT_GASOLINE_PRICE;
     const fuelEff = fuelEfficiency ? parseFloat(fuelEfficiency) : DEFAULT_FUEL_EFFICIENCY;
-    const maintBudget = annualMaintenanceBudget ? parseFloat(annualMaintenanceBudget) : 0;
+    const serviceBudget = annualServiceBudget ? parseFloat(annualServiceBudget) : 0;
+    const partBudget = annualPartBudget ? parseFloat(annualPartBudget) : 0;
+    const materialBudget = annualMaterialBudget ? parseFloat(annualMaterialBudget) : 0;
+
+    const serviceDiscRate =
+      serviceDiscountEnabled && serviceDiscount ? parseFloat(serviceDiscount) / 100 : 0;
+    const partDiscRate =
+      partDiscountEnabled && partDiscount ? parseFloat(partDiscount) / 100 : 0;
+    const materialDiscRate =
+      materialDiscountEnabled && materialDiscount ? parseFloat(materialDiscount) / 100 : 0;
+
+    const effectiveServiceBudget = Math.max(serviceBudget * (1 - serviceDiscRate), 0);
+    const effectivePartBudget = Math.max(partBudget * (1 - partDiscRate), 0);
+    const effectiveMaterialBudget = Math.max(materialBudget * (1 - materialDiscRate), 0);
+
+    const annualMaintenanceTotal =
+      effectiveServiceBudget + effectivePartBudget + effectiveMaterialBudget;
 
     // Calculations
     const downPaymentAmount = vehiclePrice * dpRate;
@@ -479,17 +511,11 @@ const TCOCalculator = () => {
     const totalTax = TAX_AMOUNT * lifecycleYears;
     const totalKm = annualKm * lifecycleYears;
 
-    // Estimated maintenance cost (varies by product type)
-    const maintenanceCostPerKm = productType === "giga" ? 1500 : productType === "traga" ? 1200 : 1000;
-    const maintenanceFromKm = totalKm * maintenanceCostPerKm;
-    
     // Operational costs
     const totalDriverSalary = driverSalary * 12 * lifecycleYears;
     const totalGasolineCost = (totalKm / fuelEff) * gasPrice;
-    const totalMaintenanceBudget = maintBudget * lifecycleYears;
-    
-    // Use the higher of maintenance from km or maintenance budget
-    const totalMaintenance = Math.max(maintenanceFromKm, totalMaintenanceBudget);
+    const totalMaintenanceBudget = annualMaintenanceTotal * lifecycleYears;
+    const totalMaintenance = totalMaintenanceBudget;
 
     // Total Cost of Ownership
     const totalCostOfOwnership =
@@ -541,7 +567,15 @@ const TCOCalculator = () => {
     monthlyDriverSalary,
     gasolinePrice,
     fuelEfficiency,
-    annualMaintenanceBudget,
+    annualServiceBudget,
+    annualPartBudget,
+    annualMaterialBudget,
+    serviceDiscountEnabled,
+    partDiscountEnabled,
+    materialDiscountEnabled,
+    serviceDiscount,
+    partDiscount,
+    materialDiscount,
   ]);
 
   return (
@@ -728,15 +762,107 @@ const TCOCalculator = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="annualMaintenanceBudget">Maintenance Budget (IDR/year)</Label>
+                  <Label htmlFor="annualServiceBudget">Service Budget (IDR/year)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="annualServiceBudget"
+                      type="number"
+                      placeholder="e.g., 5000000"
+                      value={annualServiceBudget}
+                      onChange={(e) => setAnnualServiceBudget(e.target.value)}
+                      className="bg-card"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Checkbox
+                      id="serviceDiscountEnabled"
+                      checked={serviceDiscountEnabled}
+                      onCheckedChange={(checked) =>
+                        setServiceDiscountEnabled(checked === true)
+                      }
+                    />
+                    <Label htmlFor="serviceDiscountEnabled" className="text-sm">
+                      Discount?
+                    </Label>
+                    {serviceDiscountEnabled && (
+                      <Input
+                        id="serviceDiscount"
+                        type="number"
+                        placeholder="Discount % (e.g., 10)"
+                        value={serviceDiscount}
+                        onChange={(e) => setServiceDiscount(e.target.value)}
+                        className="bg-card w-32"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="annualPartBudget">Part Budget (IDR/year)</Label>
                   <Input
-                    id="annualMaintenanceBudget"
+                    id="annualPartBudget"
                     type="number"
-                    placeholder="e.g., 10000000"
-                    value={annualMaintenanceBudget}
-                    onChange={(e) => setAnnualMaintenanceBudget(e.target.value)}
+                    placeholder="e.g., 3000000"
+                    value={annualPartBudget}
+                    onChange={(e) => setAnnualPartBudget(e.target.value)}
                     className="bg-card"
                   />
+                  <div className="flex items-center gap-2 mt-1">
+                    <Checkbox
+                      id="partDiscountEnabled"
+                      checked={partDiscountEnabled}
+                      onCheckedChange={(checked) =>
+                        setPartDiscountEnabled(checked === true)
+                      }
+                    />
+                    <Label htmlFor="partDiscountEnabled" className="text-sm">
+                      Discount?
+                    </Label>
+                    {partDiscountEnabled && (
+                      <Input
+                        id="partDiscount"
+                        type="number"
+                        placeholder="Discount % (e.g., 10)"
+                        value={partDiscount}
+                        onChange={(e) => setPartDiscount(e.target.value)}
+                        className="bg-card w-32"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="annualMaterialBudget">Material Budget (IDR/year)</Label>
+                  <Input
+                    id="annualMaterialBudget"
+                    type="number"
+                    placeholder="e.g., 2000000"
+                    value={annualMaterialBudget}
+                    onChange={(e) => setAnnualMaterialBudget(e.target.value)}
+                    className="bg-card"
+                  />
+                  <div className="flex items-center gap-2 mt-1">
+                    <Checkbox
+                      id="materialDiscountEnabled"
+                      checked={materialDiscountEnabled}
+                      onCheckedChange={(checked) =>
+                        setMaterialDiscountEnabled(checked === true)
+                      }
+                    />
+                    <Label htmlFor="materialDiscountEnabled" className="text-sm">
+                      Discount?
+                    </Label>
+                    {materialDiscountEnabled && (
+                      <Input
+                        id="materialDiscount"
+                        type="number"
+                        placeholder="Discount % (e.g., 10)"
+                        value={materialDiscount}
+                        onChange={(e) => setMaterialDiscount(e.target.value)}
+                        className="bg-card w-32"
+                      />
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -895,7 +1021,12 @@ const TCOCalculator = () => {
                         monthlyDriverSalary,
                         gasolinePrice,
                         fuelEfficiency,
-                        annualMaintenanceBudget,
+                        annualServiceBudget,
+                        annualPartBudget,
+                        annualMaterialBudget,
+                        serviceDiscount,
+                        partDiscount,
+                        materialDiscount,
                         calculations,
                       });
                     }}
