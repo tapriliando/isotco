@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -139,6 +139,43 @@ const generateMockAISummary = (calc: SummaryCalculations): string => {
       : "";
 
   return `Total biaya per bulan yaitu Rp. ${costPerMonthFormatted} yang mencakup biaya kepemilikan (cicilan, asuransi, pajak) dan biaya operasional.${operationalPhrase} Dengan asumsi unit beroperasi ${operatingDaysPerMonth} hari/bulan dan revenue minimal Rp. ${formatNumberId(dailyRevenue)}/hari, revenue bulanan Rp. ${formatNumberId(monthlyRevenue)} dikurangi biaya bulanan Rp. ${costPerMonthFormatted} menghasilkan keuntungan bersih per bulan sekitar Rp. ${netProfitFormatted}.`;
+};
+
+const generateMockAISummaryBullets = (calc: SummaryCalculations): string[] => {
+  const costPerMonthFormatted = formatNumberId(calc.costPerMonth);
+  const dailyRevenue = 1000000;
+  const operatingDaysPerMonth = 25;
+  const monthlyRevenue = dailyRevenue * operatingDaysPerMonth;
+  const netProfit = monthlyRevenue - calc.costPerMonth;
+  const netProfitFormatted = formatNumberId(netProfit);
+  const monthlyRevenueFormatted = formatNumberId(monthlyRevenue);
+
+  const operationalParts: string[] = [];
+  if (calc.totalDriverSalary > 0) {
+    const driverPerMonth = calc.totalDriverSalary / (calc.lifecycleYears * 12);
+    operationalParts.push(`gaji sopir (Rp. ${formatNumberId(driverPerMonth)}/bulan)`);
+  }
+  if (calc.totalGasolineCost > 0) {
+    const gasPerMonth = calc.totalGasolineCost / (calc.lifecycleYears * 12);
+    operationalParts.push(`BBM (Rp. ${formatNumberId(gasPerMonth)}/bulan)`);
+  }
+  if (calc.totalMaintenance > 0) {
+    const maintPerMonth = calc.totalMaintenance / (calc.lifecycleYears * 12);
+    operationalParts.push(`maintenance (Rp. ${formatNumberId(maintPerMonth)}/bulan)`);
+  }
+
+  const operationalSummary =
+    operationalParts.length > 0
+      ? `Perkiraan biaya operasional per bulan: ${operationalParts.join(", ")}.`
+      : "Biaya operasional belum diisi secara lengkap.";
+
+  return [
+    `Perkiraan total biaya kepemilikan per bulan: Rp. ${costPerMonthFormatted}.`,
+    operationalSummary,
+    `Dengan asumsi unit beroperasi ${operatingDaysPerMonth} hari/bulan dan revenue minimal Rp. ${formatNumberId(
+      dailyRevenue
+    )}/hari (Rp. ${monthlyRevenueFormatted}/bulan), estimasi keuntungan bersih per bulan sekitar Rp. ${netProfitFormatted}.`,
+  ];
 };
 
 type CalculationsResult = {
@@ -494,7 +531,7 @@ const TCOCalculator = () => {
   const [interestRate, setInterestRate] = useState("0.17");
   const [leasePeriod, setLeasePeriod] = useState("5");
   const [customPrice, setCustomPrice] = useState("");
-  const [monthlyDriverSalary, setMonthlyDriverSalary] = useState("");
+  const [monthlyDriverSalary, setMonthlyDriverSalary] = useState("5000000");
   const [gasolinePrice, setGasolinePrice] = useState(DEFAULT_GASOLINE_PRICE.toString());
   const [fuelEfficiency, setFuelEfficiency] = useState(DEFAULT_FUEL_EFFICIENCY.toString());
   const [annualServiceBudget, setAnnualServiceBudget] = useState("5000000");
@@ -512,6 +549,19 @@ const TCOCalculator = () => {
   const [antiRustEnabled, setAntiRustEnabled] = useState(true);
   const [outletEfficiencyEnabled, setOutletEfficiencyEnabled] = useState(true);
   const [outletDowntimeEnabled, setOutletDowntimeEnabled] = useState(true);
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  const [pdfStatusMessage, setPdfStatusMessage] = useState<string | null>(null);
+  const [clipboardStatusMessage, setClipboardStatusMessage] = useState<string | null>(null);
+  const [isEmbedded, setIsEmbedded] = useState(false);
+
+  useEffect(() => {
+    try {
+      // When embedded in Salesforce (iframe), window.self !== window.top
+      setIsEmbedded(window.self !== window.top);
+    } catch {
+      setIsEmbedded(false);
+    }
+  }, []);
 
   const calculations = useMemo(() => {
     const selectedProduct = PRODUCT_TYPES.find((p) => p.value === productType);
@@ -695,533 +745,652 @@ const TCOCalculator = () => {
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="flex flex-col items-center gap-4 mb-4">
+        <div className="mb-6 text-center">
+          <div
+            className={`flex flex-col items-center gap-4 ${
+              isEmbedded ? "mb-2" : "mb-4"
+            }`}
+          >
             <img src={astraLogo} alt="Astra Isuzu Logo" className="h-16 md:h-20 w-auto" />
             <h1 className="text-3xl md:text-4xl font-bold text-foreground">
               Astra Isuzu TCO Calculator
             </h1>
           </div>
-          <p className="text-muted-foreground text-lg">
-            Total Cost of Ownership Calculator for Product and Service of Astra Isuzu dealership
-          </p>
+          {!isEmbedded && (
+            <p className="text-muted-foreground text-lg">
+              Total Cost of Ownership Calculator for Product and Service of Astra Isuzu dealership
+            </p>
+          )}
+        </div>
+
+        {/* Stepper & mobile summary shortcut */}
+        <div className="mb-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-1 items-center justify-center gap-4 md:justify-start">
+              {[
+                {
+                  id: 1 as const,
+                  label: "Kendaraan",
+                  description: "Konfigurasi unit & penggunaan",
+                },
+                {
+                  id: 2 as const,
+                  label: "Biaya",
+                  description: "Parameter finansial & operasional",
+                },
+                {
+                  id: 3 as const,
+                  label: "Keunggulan & Ringkasan",
+                  description: "Astra Isuzu advantages & TCO",
+                },
+              ].map((step) => {
+                const isActive = currentStep === step.id;
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={() => setCurrentStep(step.id)}
+                    className="flex items-center gap-3 text-left text-sm focus:outline-none"
+                  >
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold ${
+                        isActive
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background text-muted-foreground"
+                      }`}
+                    >
+                      {step.id}
+                    </div>
+                    <div>
+                      <div
+                        className={`font-medium ${
+                          isActive ? "text-foreground" : "text-muted-foreground"
+                        }`}
+                      >
+                        {step.label}
+                      </div>
+                      <div className="hidden text-xs text-muted-foreground sm:block">
+                        {step.description}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="w-full md:w-auto md:hidden"
+              onClick={() => {
+                const el = document.getElementById("tco-summary");
+                if (el) {
+                  el.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+              }}
+            >
+              Lihat Ringkasan TCO
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Input Section */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Vehicle Configuration */}
-            <Card className="shadow-md">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Truck className="h-5 w-5" />
-                  Vehicle Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="productType">Product Type</Label>
-                  <Select value={productType} onValueChange={setProductType}>
-                    <SelectTrigger id="productType" className="bg-card">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {PRODUCT_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            {currentStep === 1 && (
+              <Card className="shadow-md">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Truck className="h-5 w-5" />
+                    Vehicle Configuration
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="productType">Product Type</Label>
+                    <Select value={productType} onValueChange={setProductType}>
+                      <SelectTrigger id="productType" className="bg-card">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {PRODUCT_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="customPrice">Vehicle Price (IDR)</Label>
-                  <Input
-                    id="customPrice"
-                    type="number"
-                    placeholder={`Default: ${formatCurrency(PRODUCT_TYPES.find(p => p.value === productType)?.basePrice || 0)}`}
-                    value={customPrice}
-                    onChange={(e) => setCustomPrice(e.target.value)}
-                    className="bg-card"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="registration">Police Registration</Label>
-                  <Select value={registration} onValueChange={setRegistration}>
-                    <SelectTrigger id="registration" className="bg-card">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {REGISTRATION_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="plateColor">Plate Number Colour</Label>
-                  <Select value={plateColor} onValueChange={setPlateColor}>
-                    <SelectTrigger id="plateColor" className="bg-card">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {PLATE_COLORS.map((color) => (
-                        <SelectItem key={color.value} value={color.value}>
-                          {color.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="application">Application</Label>
-                  <Select value={application} onValueChange={setApplication}>
-                    <SelectTrigger id="application" className="bg-card">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {APPLICATIONS.map((app) => (
-                        <SelectItem key={app.value} value={app.value}>
-                          {app.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="lifecycle">Operational Lifecycle</Label>
-                  <Select value={lifecycle} onValueChange={setLifecycle}>
-                    <SelectTrigger id="lifecycle" className="bg-card">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {LIFECYCLE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="kmPerYear">Kilometers per Year</Label>
-                  <Select value={kmPerYear} onValueChange={setKmPerYear}>
-                    <SelectTrigger id="kmPerYear" className="bg-card">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {KM_PER_YEAR_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Operational Parameters */}
-            <Card className="shadow-md">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Fuel className="h-5 w-5" />
-                  Operational Parameters
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="monthlyDriverSalary">Monthly Driver Salary (IDR)</Label>
-                  <Input
-                    id="monthlyDriverSalary"
-                    type="number"
-                    placeholder="e.g., 5000000"
-                    value={monthlyDriverSalary}
-                    onChange={(e) => setMonthlyDriverSalary(e.target.value)}
-                    className="bg-card"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="gasolinePrice">Gasoline Price (IDR/liter)</Label>
-                  <Input
-                    id="gasolinePrice"
-                    type="number"
-                    placeholder={`Default: ${formatNumberId(DEFAULT_GASOLINE_PRICE)}`}
-                    value={gasolinePrice}
-                    onChange={(e) => setGasolinePrice(e.target.value)}
-                    className="bg-card"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fuelEfficiency">Fuel Efficiency (km/liter)</Label>
-                  <Input
-                    id="fuelEfficiency"
-                    type="number"
-                    placeholder={`Default: ${DEFAULT_FUEL_EFFICIENCY}`}
-                    value={fuelEfficiency}
-                    onChange={(e) => setFuelEfficiency(e.target.value)}
-                    className="bg-card"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="annualServiceBudget">Service Budget (IDR/year)</Label>
-                  <div className="flex items-center gap-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="customPrice">Vehicle Price (IDR)</Label>
                     <Input
-                      id="annualServiceBudget"
+                      id="customPrice"
                       type="number"
-                      placeholder="e.g., 5000000"
-                      value={annualServiceBudget}
-                      onChange={(e) => setAnnualServiceBudget(e.target.value)}
+                      placeholder={`Default: ${formatCurrency(
+                        PRODUCT_TYPES.find((p) => p.value === productType)?.basePrice || 0
+                      )}`}
+                      value={customPrice}
+                      onChange={(e) => setCustomPrice(e.target.value)}
                       className="bg-card"
                     />
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Checkbox
-                      id="serviceDiscountEnabled"
-                      checked={serviceDiscountEnabled}
-                      onCheckedChange={(checked) =>
-                        setServiceDiscountEnabled(checked === true)
-                      }
-                    />
-                    <Label htmlFor="serviceDiscountEnabled" className="text-sm">
-                      Discount?
-                    </Label>
-                    {serviceDiscountEnabled && (
+
+                  <div className="space-y-2">
+                    <Label htmlFor="registration">Police Registration</Label>
+                    <Select value={registration} onValueChange={setRegistration}>
+                      <SelectTrigger id="registration" className="bg-card">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {REGISTRATION_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="plateColor">Plate Number Colour</Label>
+                    <Select value={plateColor} onValueChange={setPlateColor}>
+                      <SelectTrigger id="plateColor" className="bg-card">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {PLATE_COLORS.map((color) => (
+                          <SelectItem key={color.value} value={color.value}>
+                            {color.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="application">Application</Label>
+                    <Select value={application} onValueChange={setApplication}>
+                      <SelectTrigger id="application" className="bg-card">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {APPLICATIONS.map((app) => (
+                          <SelectItem key={app.value} value={app.value}>
+                            {app.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="lifecycle">Operational Lifecycle</Label>
+                    <Select value={lifecycle} onValueChange={setLifecycle}>
+                      <SelectTrigger id="lifecycle" className="bg-card">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {LIFECYCLE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="kmPerYear">Kilometers per Year</Label>
+                    <Select value={kmPerYear} onValueChange={setKmPerYear}>
+                      <SelectTrigger id="kmPerYear" className="bg-card">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {KM_PER_YEAR_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {currentStep === 2 && (
+              <>
+                {/* Operational Parameters */}
+                <Card className="shadow-md">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Fuel className="h-5 w-5" />
+                      Operational Parameters
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="monthlyDriverSalary">Monthly Driver Salary (IDR/month)</Label>
                       <Input
-                        id="serviceDiscount"
+                        id="monthlyDriverSalary"
                         type="number"
-                        placeholder="Discount % (e.g., 10)"
-                        value={serviceDiscount}
-                        onChange={(e) => setServiceDiscount(e.target.value)}
-                        className="bg-card w-32"
+                        placeholder="Contoh: 5.000.000"
+                        value={monthlyDriverSalary}
+                        onChange={(e) => setMonthlyDriverSalary(e.target.value)}
+                        className="bg-card"
                       />
-                    )}
-                  </div>
-                </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="annualPartBudget">Part Budget (IDR/year)</Label>
-                  <Input
-                    id="annualPartBudget"
-                    type="number"
-                    placeholder="e.g., 3000000"
-                    value={annualPartBudget}
-                    onChange={(e) => setAnnualPartBudget(e.target.value)}
-                    className="bg-card"
-                  />
-                  <div className="flex items-center gap-2 mt-1">
-                    <Checkbox
-                      id="partDiscountEnabled"
-                      checked={partDiscountEnabled}
-                      onCheckedChange={(checked) =>
-                        setPartDiscountEnabled(checked === true)
-                      }
-                    />
-                    <Label htmlFor="partDiscountEnabled" className="text-sm">
-                      Discount?
-                    </Label>
-                    {partDiscountEnabled && (
+                    <div className="space-y-2">
+                      <Label htmlFor="gasolinePrice">Gasoline Price (IDR/liter)</Label>
                       <Input
-                        id="partDiscount"
+                        id="gasolinePrice"
                         type="number"
-                        placeholder="Discount % (e.g., 10)"
-                        value={partDiscount}
-                        onChange={(e) => setPartDiscount(e.target.value)}
-                        className="bg-card w-32"
+                        placeholder={`Default: ${formatNumberId(DEFAULT_GASOLINE_PRICE)}`}
+                        value={gasolinePrice}
+                        onChange={(e) => setGasolinePrice(e.target.value)}
+                        className="bg-card"
                       />
-                    )}
-                  </div>
-                </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="annualMaterialBudget">Material Budget (IDR/year)</Label>
-                  <Input
-                    id="annualMaterialBudget"
-                    type="number"
-                    placeholder="e.g., 2000000"
-                    value={annualMaterialBudget}
-                    onChange={(e) => setAnnualMaterialBudget(e.target.value)}
-                    className="bg-card"
-                  />
-                  <div className="flex items-center gap-2 mt-1">
-                    <Checkbox
-                      id="materialDiscountEnabled"
-                      checked={materialDiscountEnabled}
-                      onCheckedChange={(checked) =>
-                        setMaterialDiscountEnabled(checked === true)
-                      }
-                    />
-                    <Label htmlFor="materialDiscountEnabled" className="text-sm">
-                      Discount?
-                    </Label>
-                    {materialDiscountEnabled && (
+                    <div className="space-y-2">
+                      <Label htmlFor="fuelEfficiency">Fuel Efficiency (km/liter)</Label>
                       <Input
-                        id="materialDiscount"
+                        id="fuelEfficiency"
                         type="number"
-                        placeholder="Discount % (e.g., 10)"
-                        value={materialDiscount}
-                        onChange={(e) => setMaterialDiscount(e.target.value)}
-                        className="bg-card w-32"
+                        placeholder={`Default: ${DEFAULT_FUEL_EFFICIENCY}`}
+                        value={fuelEfficiency}
+                        onChange={(e) => setFuelEfficiency(e.target.value)}
+                        className="bg-card"
                       />
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Financial Parameters */}
-            <Card className="shadow-md">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <DollarSign className="h-5 w-5" />
-                  Financial Parameters
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="downPayment">Down Payment</Label>
-                  <Select value={downPayment} onValueChange={setDownPayment}>
-                    <SelectTrigger id="downPayment" className="bg-card">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {DOWN_PAYMENT_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="depreciation">Depreciation</Label>
-                  <Select value={depreciation} onValueChange={setDepreciation}>
-                    <SelectTrigger id="depreciation" className="bg-card">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {DEPRECIATION_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="insurance">Insurance Rate</Label>
-                  <Select value={insurance} onValueChange={setInsurance}>
-                    <SelectTrigger id="insurance" className="bg-card">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {INSURANCE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="interestRate">Interest Rate</Label>
-                  <Select value={interestRate} onValueChange={setInterestRate}>
-                    <SelectTrigger id="interestRate" className="bg-card">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {INTEREST_RATE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="leasePeriod">Lease Period</Label>
-                  <Select value={leasePeriod} onValueChange={setLeasePeriod}>
-                    <SelectTrigger id="leasePeriod" className="bg-card">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      {LEASE_PERIOD_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Tax (Annual)</Label>
-                  <Input
-                    value={formatCurrency(TAX_AMOUNT)}
-                    disabled
-                    className="bg-muted"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Astra Isuzu Advantages */}
-            <Card className="shadow-md">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Sparkles className="h-5 w-5" />
-                  Astra Isuzu Advantages
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      id="extendedWarrantyEnabled"
-                      checked={extendedWarrantyEnabled}
-                      onCheckedChange={(checked) =>
-                        setExtendedWarrantyEnabled(checked === true)
-                      }
-                      className="mt-1"
-                    />
-                    <div>
-                      <Label htmlFor="extendedWarrantyEnabled" className="font-medium">
-                        Extended Warranty
-                      </Label>
                       <p className="text-xs text-muted-foreground">
-                        Reduces operational cost depending on product type (GIGA, ELF, TRAGA).
+                        Nilai yang lebih tinggi berarti penggunaan BBM lebih efisien.
                       </p>
                     </div>
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      id="driverTrainingEnabled"
-                      checked={driverTrainingEnabled}
-                      onCheckedChange={(checked) =>
-                        setDriverTrainingEnabled(checked === true)
-                      }
-                      className="mt-1"
-                    />
-                    <div>
-                      <Label htmlFor="driverTrainingEnabled" className="font-medium">
-                        Driver Training
-                      </Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="annualServiceBudget">Service Budget (IDR/year)</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="annualServiceBudget"
+                          type="number"
+                          placeholder="Contoh: 5.000.000"
+                          value={annualServiceBudget}
+                          onChange={(e) => setAnnualServiceBudget(e.target.value)}
+                          className="bg-card"
+                        />
+                      </div>
+                      <div className="mt-1 flex items-center gap-2">
+                        <Checkbox
+                          id="serviceDiscountEnabled"
+                          checked={serviceDiscountEnabled}
+                          onCheckedChange={(checked) =>
+                            setServiceDiscountEnabled(checked === true)
+                          }
+                        />
+                        <Label htmlFor="serviceDiscountEnabled" className="text-sm">
+                          Tambahkan diskon servis (%)
+                        </Label>
+                        {serviceDiscountEnabled && (
+                          <Input
+                            id="serviceDiscount"
+                            type="number"
+                            placeholder="Contoh: 10"
+                            value={serviceDiscount}
+                            onChange={(e) => setServiceDiscount(e.target.value)}
+                            className="w-32 bg-card"
+                          />
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        Reduces gasoline cost by 18%.
+                        Diskon akan mengurangi total biaya servis tahunan secara proporsional.
                       </p>
                     </div>
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      id="santunanEnabled"
-                      checked={santunanEnabled}
-                      onCheckedChange={(checked) =>
-                        setSantunanEnabled(checked === true)
-                      }
-                      className="mt-1"
-                    />
-                    <div>
-                      <Label htmlFor="santunanEnabled" className="font-medium">
-                        Santunan Driver (Driver Compensation)
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Reduces operational cost by Rp 20.000.000.
-                      </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="annualPartBudget">Part Budget (IDR/year)</Label>
+                      <Input
+                        id="annualPartBudget"
+                        type="number"
+                        placeholder="Contoh: 3.000.000"
+                        value={annualPartBudget}
+                        onChange={(e) => setAnnualPartBudget(e.target.value)}
+                        className="bg-card"
+                      />
+                      <div className="mt-1 flex items-center gap-2">
+                        <Checkbox
+                          id="partDiscountEnabled"
+                          checked={partDiscountEnabled}
+                          onCheckedChange={(checked) =>
+                            setPartDiscountEnabled(checked === true)
+                          }
+                        />
+                        <Label htmlFor="partDiscountEnabled" className="text-sm">
+                          Tambahkan diskon part (%)
+                        </Label>
+                        {partDiscountEnabled && (
+                          <Input
+                            id="partDiscount"
+                            type="number"
+                            placeholder="Contoh: 10"
+                            value={partDiscount}
+                            onChange={(e) => setPartDiscount(e.target.value)}
+                            className="w-32 bg-card"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="annualMaterialBudget">Material Budget (IDR/year)</Label>
+                      <Input
+                        id="annualMaterialBudget"
+                        type="number"
+                        placeholder="Contoh: 2.000.000"
+                        value={annualMaterialBudget}
+                        onChange={(e) => setAnnualMaterialBudget(e.target.value)}
+                        className="bg-card"
+                      />
+                      <div className="mt-1 flex items-center gap-2">
+                        <Checkbox
+                          id="materialDiscountEnabled"
+                          checked={materialDiscountEnabled}
+                          onCheckedChange={(checked) =>
+                            setMaterialDiscountEnabled(checked === true)
+                          }
+                        />
+                        <Label htmlFor="materialDiscountEnabled" className="text-sm">
+                          Tambahkan diskon material (%)
+                        </Label>
+                        {materialDiscountEnabled && (
+                          <Input
+                            id="materialDiscount"
+                            type="number"
+                            placeholder="Contoh: 10"
+                            value={materialDiscount}
+                            onChange={(e) => setMaterialDiscount(e.target.value)}
+                            className="w-32 bg-card"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Financial Parameters */}
+                <Card className="shadow-md">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <DollarSign className="h-5 w-5" />
+                      Financial Parameters
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="downPayment">Down Payment</Label>
+                      <Select value={downPayment} onValueChange={setDownPayment}>
+                        <SelectTrigger id="downPayment" className="bg-card">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {DOWN_PAYMENT_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="depreciation">Depreciation</Label>
+                      <Select value={depreciation} onValueChange={setDepreciation}>
+                        <SelectTrigger id="depreciation" className="bg-card">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {DEPRECIATION_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="insurance">Insurance Rate</Label>
+                      <Select value={insurance} onValueChange={setInsurance}>
+                        <SelectTrigger id="insurance" className="bg-card">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {INSURANCE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="interestRate">Interest Rate</Label>
+                      <Select value={interestRate} onValueChange={setInterestRate}>
+                        <SelectTrigger id="interestRate" className="bg-card">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {INTEREST_RATE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="leasePeriod">Lease Period</Label>
+                      <Select value={leasePeriod} onValueChange={setLeasePeriod}>
+                        <SelectTrigger id="leasePeriod" className="bg-card">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {LEASE_PERIOD_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Tax (Annual)</Label>
+                      <Input
+                        value={formatCurrency(TAX_AMOUNT)}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {currentStep === 3 && (
+              <Card className="shadow-md">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Sparkles className="h-5 w-5" />
+                    Astra Isuzu Advantages
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="extendedWarrantyEnabled"
+                        checked={extendedWarrantyEnabled}
+                        onCheckedChange={(checked) =>
+                          setExtendedWarrantyEnabled(checked === true)
+                        }
+                        className="mt-1"
+                      />
+                      <div>
+                        <Label htmlFor="extendedWarrantyEnabled" className="font-medium">
+                          Extended Warranty Astra Isuzu
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Mengurangi biaya perawatan tambahan sesuai tipe unit (GIGA, ELF, TRAGA).
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      id="antiRustEnabled"
-                      checked={antiRustEnabled}
-                      onCheckedChange={(checked) =>
-                        setAntiRustEnabled(checked === true)
-                      }
-                      className="mt-1"
-                    />
-                    <div>
-                      <Label htmlFor="antiRustEnabled" className="font-medium">
-                        Anti-rust
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Reduces operational cost by Rp 3.500.000.
-                      </p>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="driverTrainingEnabled"
+                        checked={driverTrainingEnabled}
+                        onCheckedChange={(checked) =>
+                          setDriverTrainingEnabled(checked === true)
+                        }
+                        className="mt-1"
+                      />
+                      <div>
+                        <Label htmlFor="driverTrainingEnabled" className="font-medium">
+                          Pelatihan Pengemudi
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Mengurangi biaya BBM hingga 18% berkat gaya mengemudi yang lebih efisien.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      id="outletEfficiencyEnabled"
-                      checked={outletEfficiencyEnabled}
-                      onCheckedChange={(checked) =>
-                        setOutletEfficiencyEnabled(checked === true)
-                      }
-                      className="mt-1"
-                    />
-                    <div>
-                      <Label htmlFor="outletEfficiencyEnabled" className="font-medium">
-                        Astra Isuzu Outlet Networks (Efficiency of Nearest Outlet Reach)
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Reduces operational cost by Rp 150.012.000.
-                      </p>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="santunanEnabled"
+                        checked={santunanEnabled}
+                        onCheckedChange={(checked) =>
+                          setSantunanEnabled(checked === true)
+                        }
+                        className="mt-1"
+                      />
+                      <div>
+                        <Label htmlFor="santunanEnabled" className="font-medium">
+                          Santunan Driver
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Mengurangi risiko biaya tak terduga hingga Rp 20.000.000.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      id="outletDowntimeEnabled"
-                      checked={outletDowntimeEnabled}
-                      onCheckedChange={(checked) =>
-                        setOutletDowntimeEnabled(checked === true)
-                      }
-                      className="mt-1"
-                    />
-                    <div>
-                      <Label htmlFor="outletDowntimeEnabled" className="font-medium">
-                        Astra Isuzu Outlet Networks (Cost of Avoidance Downtime)
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Reduces operational cost by Rp 1.023.867.
-                      </p>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="antiRustEnabled"
+                        checked={antiRustEnabled}
+                        onCheckedChange={(checked) =>
+                          setAntiRustEnabled(checked === true)
+                        }
+                        className="mt-1"
+                      />
+                      <div>
+                        <Label htmlFor="antiRustEnabled" className="font-medium">
+                          Anti-rust
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Melindungi bodi dari karat dan menghemat biaya perbaikan hingga Rp 3.500.000.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="outletEfficiencyEnabled"
+                        checked={outletEfficiencyEnabled}
+                        onCheckedChange={(checked) =>
+                          setOutletEfficiencyEnabled(checked === true)
+                        }
+                        className="mt-1"
+                      />
+                      <div>
+                        <Label htmlFor="outletEfficiencyEnabled" className="font-medium">
+                          Jaringan Outlet – Efisiensi Jarak
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Mengurangi biaya operasional berkat outlet yang lebih dekat (hemat hingga Rp
+                          150.012.000 sepanjang lifecycle).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="outletDowntimeEnabled"
+                        checked={outletDowntimeEnabled}
+                        onCheckedChange={(checked) =>
+                          setOutletDowntimeEnabled(checked === true)
+                        }
+                        className="mt-1"
+                      />
+                      <div>
+                        <Label htmlFor="outletDowntimeEnabled" className="font-medium">
+                          Jaringan Outlet – Hindari Downtime
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Menekan biaya downtime hingga Rp 1.023.867 berkat perbaikan yang lebih cepat.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Step navigation for mobile/tablet */}
+            <div className="flex items-center justify-between pt-2 md:hidden">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={currentStep === 1}
+                onClick={() =>
+                  setCurrentStep((prev) => (prev > 1 ? ((prev - 1) as 1 | 2 | 3) : prev))
+                }
+              >
+                Sebelumnya
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() =>
+                  setCurrentStep((prev) => (prev < 3 ? ((prev + 1) as 1 | 2 | 3) : prev))
+                }
+              >
+                {currentStep === 3 ? "Tetap di Ringkasan" : "Berikutnya"}
+              </Button>
+            </div>
           </div>
 
           {/* Results Section */}
-          <div className="space-y-6">
+          <div className="space-y-6 lg:sticky lg:top-24">
             {/* TCO Summary */}
-            <Card className="shadow-lg bg-primary text-primary-foreground">
+            <Card
+              id="tco-summary"
+              className="shadow-lg bg-primary text-primary-foreground"
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2">
                   <Calculator className="h-5 w-5" />
@@ -1288,37 +1457,45 @@ const TCOCalculator = () => {
                 </div>
                 <div className="mt-4 pt-4 border-t border-primary-foreground/20">
                   <Button
-                    onClick={() => {
-                      generatePDFReport({
-                        productType,
-                        registration,
-                        plateColor,
-                        application,
-                        lifecycle,
-                        kmPerYear,
-                        downPayment,
-                        depreciation,
-                        insurance,
-                        interestRate,
-                        leasePeriod,
-                        customPrice,
-                        monthlyDriverSalary,
-                        gasolinePrice,
-                        fuelEfficiency,
-                        annualServiceBudget,
-                        annualPartBudget,
-                        annualMaterialBudget,
-                        serviceDiscount,
-                        partDiscount,
-                        materialDiscount,
-                        extendedWarrantyEnabled,
-                        driverTrainingEnabled,
-                        santunanEnabled,
-                        antiRustEnabled,
-                        outletEfficiencyEnabled,
-                        outletDowntimeEnabled,
-                        calculations,
-                      });
+                    onClick={async () => {
+                      try {
+                        setPdfStatusMessage("Menghasilkan laporan PDF...");
+                        generatePDFReport({
+                          productType,
+                          registration,
+                          plateColor,
+                          application,
+                          lifecycle,
+                          kmPerYear,
+                          downPayment,
+                          depreciation,
+                          insurance,
+                          interestRate,
+                          leasePeriod,
+                          customPrice,
+                          monthlyDriverSalary,
+                          gasolinePrice,
+                          fuelEfficiency,
+                          annualServiceBudget,
+                          annualPartBudget,
+                          annualMaterialBudget,
+                          serviceDiscount,
+                          partDiscount,
+                          materialDiscount,
+                          extendedWarrantyEnabled,
+                          driverTrainingEnabled,
+                          santunanEnabled,
+                          antiRustEnabled,
+                          outletEfficiencyEnabled,
+                          outletDowntimeEnabled,
+                          calculations,
+                        });
+                        setPdfStatusMessage("Laporan PDF berhasil diunduh.");
+                      } catch (error) {
+                        setPdfStatusMessage(
+                          "Terjadi kesalahan saat mengunduh laporan PDF. Silakan coba lagi."
+                        );
+                      }
                     }}
                     className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90"
                     variant="outline"
@@ -1326,6 +1503,53 @@ const TCOCalculator = () => {
                     <Download className="h-4 w-4 mr-2" />
                     Download PDF Report
                   </Button>
+                  <div className="mt-3 space-y-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-primary-foreground/40 bg-primary/10 text-primary-foreground hover:bg-primary/20"
+                      onClick={async () => {
+                        const summaryText = [
+                          `Total TCO: ${formatCurrency(calculations.totalCostOfOwnership)}`,
+                          `Biaya per bulan: ${formatCurrency(calculations.costPerMonth)}`,
+                          `Biaya per km: ${formatCurrency(calculations.costPerKm)}`,
+                          `Penghematan Astra Isuzu: ${formatCurrency(
+                            calculations.totalAstraAdvantagesSaving
+                          )}`,
+                        ].join(" | ");
+
+                        try {
+                          if (navigator.clipboard && navigator.clipboard.writeText) {
+                            await navigator.clipboard.writeText(summaryText);
+                            setClipboardStatusMessage(
+                              "Ringkasan angka utama berhasil disalin ke clipboard."
+                            );
+                          } else {
+                            setClipboardStatusMessage(
+                              "Clipboard tidak tersedia di browser ini. Silakan salin manual."
+                            );
+                          }
+                        } catch (error) {
+                          setClipboardStatusMessage(
+                            "Gagal menyalin ringkasan. Silakan coba lagi atau salin manual."
+                          );
+                        }
+                      }}
+                    >
+                      Salin Ringkasan Angka Utama
+                    </Button>
+                    {clipboardStatusMessage && (
+                      <p className="text-xs text-primary-foreground/80">
+                        {clipboardStatusMessage}
+                      </p>
+                    )}
+                    {pdfStatusMessage && (
+                      <p className="text-xs text-primary-foreground/80">
+                        {pdfStatusMessage}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1501,8 +1725,8 @@ const TCOCalculator = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {generateMockAISummary({
+                <ul className="space-y-2 text-sm text-muted-foreground leading-relaxed">
+                  {generateMockAISummaryBullets({
                     costPerMonth: calculations.costPerMonth,
                     totalDriverSalary: calculations.totalDriverSalary,
                     totalGasolineCost: calculations.totalGasolineCost,
@@ -1510,8 +1734,13 @@ const TCOCalculator = () => {
                     costPerYear: calculations.costPerYear,
                     totalKm: calculations.totalKm,
                     lifecycleYears: calculations.lifecycleYears,
-                  })}
-                </p>
+                  }).map((item, index) => (
+                    <li key={index} className="flex gap-2">
+                      <span className="mt-[2px]">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </CardContent>
             </Card>
           </div>
