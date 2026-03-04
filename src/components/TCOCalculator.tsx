@@ -1251,6 +1251,22 @@ const TCOCalculator = () => {
                       {formatCurrency(calculations.costPerKm)}
                     </span>
                   </div>
+                  <div className="flex justify-between items-center py-2 border-t border-primary-foreground/20">
+                    <span className="text-primary-foreground/80">
+                      Cost per KM (Before Astra Isuzu)
+                    </span>
+                    <span className="font-semibold">
+                      {formatCurrency(calculations.costPerKmBeforeAdvantages)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-t border-primary-foreground/20">
+                    <span className="text-primary-foreground/80">
+                      Cost per KM (After Astra Isuzu)
+                    </span>
+                    <span className="font-semibold">
+                      {formatCurrency(calculations.costPerKmAfterAdvantages)}
+                    </span>
+                  </div>
                 </div>
                 <div className="mt-4 space-y-1 text-xs">
                   <div className="flex justify-between">
