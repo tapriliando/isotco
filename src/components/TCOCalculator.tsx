@@ -60,8 +60,6 @@ const KM_PER_YEAR_OPTIONS = [
   { value: "60000", label: "60,000 km" },
   { value: "70000", label: "70,000 km" },
   { value: "80000", label: "80,000 km" },
-  { value: "90000", label: "90,000 km" },
-  { value: "100000", label: "100,000 km" },
 ];
 
 const DOWN_PAYMENT_OPTIONS = [
@@ -309,19 +307,19 @@ const generatePDFReport = (data: PDFData) => {
   // Vehicle Configuration
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("Vehicle Configuration", margin, yPos);
+  doc.text("Konfigurasi Kendaraan", margin, yPos);
   yPos += 8;
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   const vehicleConfig = [
-    ["Product Type", PRODUCT_TYPES.find((p) => p.value === data.productType)?.label || data.productType],
-    ["Vehicle Price", formatCurrency(data.calculations.vehiclePrice)],
-    ["Registration", REGISTRATION_TYPES.find((r) => r.value === data.registration)?.label || data.registration],
-    ["Plate Color", PLATE_COLORS.find((p) => p.value === data.plateColor)?.label || data.plateColor],
-    ["Application", APPLICATIONS.find((a) => a.value === data.application)?.label || data.application],
-    ["Lifecycle", `${data.lifecycle} Years`],
-    ["Kilometers per Year", `${parseInt(data.kmPerYear).toLocaleString("id-ID")} km`],
+    ["Tipe Kendaraan", PRODUCT_TYPES.find((p) => p.value === data.productType)?.label || data.productType],
+    ["Harga Kendaraan", formatCurrency(data.calculations.vehiclePrice)],
+    ["Registrasi", REGISTRATION_TYPES.find((r) => r.value === data.registration)?.label || data.registration],
+    ["Warna Plat", PLATE_COLORS.find((p) => p.value === data.plateColor)?.label || data.plateColor],
+    ["Aplikasi", APPLICATIONS.find((a) => a.value === data.application)?.label || data.application],
+    ["Umur Operasional", `${data.lifecycle} Years`],
+    ["Kilometer per Tahun", `${parseInt(data.kmPerYear).toLocaleString("id-ID")} km`],
   ];
 
   autoTable(doc, {
@@ -346,11 +344,11 @@ const generatePDFReport = (data: PDFData) => {
   doc.setFont("helvetica", "normal");
   const financialParams = [
     ["Down Payment", `${(parseFloat(data.downPayment) * 100).toFixed(0)}%`],
-    ["Depreciation", `${(parseFloat(data.depreciation) * 100).toFixed(0)}%`],
+    ["Penyusutan", `${(parseFloat(data.depreciation) * 100).toFixed(0)}%`],
     ["Insurance Rate", `${(parseFloat(data.insurance) * 100).toFixed(2)}%`],
-    ["Interest Rate", `${(parseFloat(data.interestRate) * 100).toFixed(0)}%`],
-    ["Lease Period", `${data.leasePeriod} Years`],
-    ["Annual Tax", formatCurrency(TAX_AMOUNT)],
+    ["Suku Bunga", `${(parseFloat(data.interestRate) * 100).toFixed(0)}%`],
+    ["Periode Sewa", `${data.leasePeriod} Years`],
+    ["Pajak Tahunan", formatCurrency(TAX_AMOUNT)],
   ];
 
   autoTable(doc, {
@@ -374,12 +372,12 @@ const generatePDFReport = (data: PDFData) => {
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   const operationalParams = [
-    ["Monthly Driver Salary", data.monthlyDriverSalary ? formatCurrency(parseFloat(data.monthlyDriverSalary)) : "Not set"],
-    ["Gasoline Price", formatCurrency(parseFloat(data.gasolinePrice)) + "/liter"],
-    ["Fuel Efficiency", `${data.fuelEfficiency} km/liter`],
-    ["Service Budget (Annual)", formatCurrency(parseFloat(data.annualServiceBudget))],
-    ["Part Budget (Annual)", formatCurrency(parseFloat(data.annualPartBudget))],
-    ["Material Budget (Annual)", formatCurrency(parseFloat(data.annualMaterialBudget))],
+    ["Gaji Sopir per Bulan", data.monthlyDriverSalary ? formatCurrency(parseFloat(data.monthlyDriverSalary)) : "Not set"],
+    ["Harga BBM per Liter", formatCurrency(parseFloat(data.gasolinePrice)) + "/liter"],
+    ["Konsumsi Bahan Bakar", `${data.fuelEfficiency} km/liter`],
+    ["Anggaran Service Tahunan", formatCurrency(parseFloat(data.annualServiceBudget))],
+    ["Anggaran Part Tahunan", formatCurrency(parseFloat(data.annualPartBudget))],
+    ["Anggaran Bahan Tahunan", formatCurrency(parseFloat(data.annualMaterialBudget))],
   ];
 
   autoTable(doc, {
