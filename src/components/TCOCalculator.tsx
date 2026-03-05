@@ -20,9 +20,9 @@ declare module "jspdf" {
 }
 import astraLogo from "@/assets/astra_logo.png";
 const PRODUCT_TYPES = [
-  { value: "elf", label: "ELF Type", basePrice: 350000000 },
-  { value: "traga", label: "TRAGA Type", basePrice: 450000000 },
-  { value: "giga", label: "GIGA Type", basePrice: 750000000 },
+  { value: "elf", label: "ELF Type", basePrice: '-' },
+  { value: "traga", label: "TRAGA Type", basePrice: '-' },
+  { value: "giga", label: "GIGA Type", basePrice: '-' },
 ];
 
 const REGISTRATION_TYPES = [
@@ -48,39 +48,65 @@ const LIFECYCLE_OPTIONS = [
   { value: "4", label: "4 Years" },
   { value: "5", label: "5 Years" },
   { value: "6", label: "6 Years" },
+  { value: "7", label: "7 Years" },
 ];
 
 const KM_PER_YEAR_OPTIONS = [
+  { value: "10000", label: "10,000 km" },
+  { value: "20000", label: "20,000 km" },
+  { value: "30000", label: "30,000 km" },
+  { value: "40000", label: "40,000 km" },
+  { value: "50000", label: "50,000 km" },
   { value: "60000", label: "60,000 km" },
   { value: "70000", label: "70,000 km" },
   { value: "80000", label: "80,000 km" },
+  { value: "90000", label: "90,000 km" },
+  { value: "100000", label: "100,000 km" },
 ];
 
 const DOWN_PAYMENT_OPTIONS = [
+  { value: "0.15", label: "15%" },
+  { value: "0.20", label: "20%" },
   { value: "0.25", label: "25%" },
   { value: "0.30", label: "30%" },
   { value: "0.50", label: "50%" },
+  { value: "0.75", label: "75%" },
 ];
 
 const DEPRECIATION_OPTIONS = [
   { value: "0.70", label: "70%" },
   { value: "0.65", label: "65%" },
   { value: "0.60", label: "60%" },
+  { value: "0.55", label: "55%" },
+  { value: "0.50", label: "50%" },
+  { value: "0.45", label: "45%" },
+  { value: "0.40", label: "40%" },
+  { value: "0.35", label: "35%" },
 ];
 
 const INSURANCE_OPTIONS = [
   { value: "0.07", label: "7%" },
   { value: "0.055", label: "5.5%" },
   { value: "0.05", label: "5%" },
+  { value: "0.045", label: "4.5%" },
+  { value: "0.04", label: "4%" },
+  { value: "0.035", label: "3.5%" },
+  { value: "0.03", label: "3%" },
 ];
 
 const INTEREST_RATE_OPTIONS = [
+  { value: "0.13", label: "13%" },
+  { value: "0.14", label: "14%" },
+  { value: "0.15", label: "15%" },
+  { value: "0.16", label: "16%" },
   { value: "0.17", label: "17%" },
   { value: "0.19", label: "19%" },
   { value: "0.21", label: "21%" },
+  { value: "0.23", label: "23%" },
 ];
 
 const LEASE_PERIOD_OPTIONS = [
+  { value: "3", label: "3 Years" },
   { value: "4", label: "4 Years" },
   { value: "5", label: "5 Years" },
 ];
@@ -114,7 +140,7 @@ type SummaryCalculations = {
 
 const generateMockAISummary = (calc: SummaryCalculations): string => {
   const costPerMonthFormatted = formatNumberId(calc.costPerMonth);
-  const dailyRevenue = 1000000;
+  const dailyRevenue = 1500000;
   const operatingDaysPerMonth = 25;
   const monthlyRevenue = dailyRevenue * operatingDaysPerMonth;
   const netProfit = monthlyRevenue - calc.costPerMonth;
