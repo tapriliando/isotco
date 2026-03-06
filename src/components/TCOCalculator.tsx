@@ -871,7 +871,7 @@ const TCOCalculator = () => {
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="productType">Product Type</Label>
+                    <Label htmlFor="productType">Tipe Produk</Label>
                     <Select value={productType} onValueChange={setProductType}>
                       <SelectTrigger id="productType" className="bg-card">
                         <SelectValue />
@@ -887,7 +887,7 @@ const TCOCalculator = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="customPrice">Vehicle Price (IDR)</Label>
+                    <Label htmlFor="customPrice">Harga Kendaraan (IDR)</Label>
                     <Input
                       id="customPrice"
                       type="number"
@@ -901,7 +901,7 @@ const TCOCalculator = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="registration">Police Registration</Label>
+                    <Label htmlFor="registration">Registrasi Polisi</Label>
                     <Select value={registration} onValueChange={setRegistration}>
                       <SelectTrigger id="registration" className="bg-card">
                         <SelectValue />
@@ -917,7 +917,7 @@ const TCOCalculator = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="plateColor">Plate Number Colour</Label>
+                    <Label htmlFor="plateColor">Warna Plat Nomor</Label>
                     <Select value={plateColor} onValueChange={setPlateColor}>
                       <SelectTrigger id="plateColor" className="bg-card">
                         <SelectValue />
@@ -933,7 +933,7 @@ const TCOCalculator = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="application">Application</Label>
+                    <Label htmlFor="application">Aplikasi</Label>
                     <Select value={application} onValueChange={setApplication}>
                       <SelectTrigger id="application" className="bg-card">
                         <SelectValue />
@@ -949,7 +949,7 @@ const TCOCalculator = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="lifecycle">Operational Lifecycle</Label>
+                    <Label htmlFor="lifecycle">Umur Operasional</Label>
                     <Select value={lifecycle} onValueChange={setLifecycle}>
                       <SelectTrigger id="lifecycle" className="bg-card">
                         <SelectValue />
@@ -965,7 +965,7 @@ const TCOCalculator = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="kmPerYear">Kilometers per Year</Label>
+                    <Label htmlFor="kmPerYear">Kilometer per tahun</Label>
                     <Select value={kmPerYear} onValueChange={setKmPerYear}>
                       <SelectTrigger id="kmPerYear" className="bg-card">
                         <SelectValue />
@@ -995,7 +995,7 @@ const TCOCalculator = () => {
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="monthlyDriverSalary">Monthly Driver Salary (IDR/month)</Label>
+                      <Label htmlFor="monthlyDriverSalary">Gaji Bulanan Driver (IDR/bulan)</Label>
                       <Input
                         id="monthlyDriverSalary"
                         type="number"
@@ -1007,7 +1007,7 @@ const TCOCalculator = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="gasolinePrice">Gasoline Price (IDR/liter)</Label>
+                      <Label htmlFor="gasolinePrice">Biaya BBM (IDR/liter)</Label>
                       <Input
                         id="gasolinePrice"
                         type="number"
@@ -1019,7 +1019,7 @@ const TCOCalculator = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="fuelEfficiency">Fuel Efficiency (km/liter)</Label>
+                      <Label htmlFor="fuelEfficiency">Rasio Bahan Bakar (km/liter)</Label>
                       <Input
                         id="fuelEfficiency"
                         type="number"
@@ -1168,7 +1168,7 @@ const TCOCalculator = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="depreciation">Depreciation</Label>
+                      <Label htmlFor="depreciation">Depresiasi</Label>
                       <Select value={depreciation} onValueChange={setDepreciation}>
                         <SelectTrigger id="depreciation" className="bg-card">
                           <SelectValue />
@@ -1184,7 +1184,7 @@ const TCOCalculator = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="insurance">Insurance Rate</Label>
+                      <Label htmlFor="insurance">Rate Asuransi</Label>
                       <Select value={insurance} onValueChange={setInsurance}>
                         <SelectTrigger id="insurance" className="bg-card">
                           <SelectValue />
@@ -1200,7 +1200,7 @@ const TCOCalculator = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="interestRate">Interest Rate</Label>
+                      <Label htmlFor="interestRate">Suku Bunga</Label>
                       <Select value={interestRate} onValueChange={setInterestRate}>
                         <SelectTrigger id="interestRate" className="bg-card">
                           <SelectValue />
@@ -1216,7 +1216,7 @@ const TCOCalculator = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="leasePeriod">Lease Period</Label>
+                      <Label htmlFor="leasePeriod">Periode Angsuran</Label>
                       <Select value={leasePeriod} onValueChange={setLeasePeriod}>
                         <SelectTrigger id="leasePeriod" className="bg-card">
                           <SelectValue />
