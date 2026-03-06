@@ -20,9 +20,15 @@ declare module "jspdf" {
 }
 import astraLogo from "@/assets/astra_logo.png";
 const PRODUCT_TYPES = [
-  { value: "elf", label: "ELF Type", basePrice: '-' },
-  { value: "traga", label: "TRAGA Type", basePrice: '-' },
-  { value: "giga", label: "GIGA Type", basePrice: '-' },
+  { value: "TRAGA PICK UP (FD)", label: "TRAGA PICK UP (FD)", basePrice: '-' },
+  { value: "NMR", label: "NMR", basePrice: '-' },
+  { value: "NMR L", label: "NMR L", basePrice: '-' },
+  { value: "NMR B", label: "NMR B", basePrice: '-' },
+  { value: "NLR", label: "NLR", basePrice: '-' },
+  { value: "GVR J", label: "GVR J", basePrice: '-' },
+  { value: "FVM U", label: "FVM U", basePrice: '-' },
+  { value: "FVM N", label: "FVM N", basePrice: '-' },
+  { value: "NMR H.D 5.8", label: "NMR H.D 5.8", basePrice: '-' },
 ];
 
 const REGISTRATION_TYPES = [
