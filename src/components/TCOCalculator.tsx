@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { supabaseClient } from "@/lib/supabaseClient";
 // Extend jsPDF type to include lastAutoTable
 declare module "jspdf" {
   interface jsPDF {
@@ -245,6 +246,8 @@ type CalculationsResult = {
 
 type PDFData = {
   // Inputs
+  cabang: string;
+  plArea: string;
   productType: string;
   registration: string;
   plateColor: string;
@@ -256,7 +259,6 @@ type PDFData = {
   insurance: string;
   interestRate: string;
   leasePeriod: string;
-  customPrice: string;
   monthlyDriverSalary: string;
   gasolinePrice: string;
   fuelEfficiency: string;
@@ -319,6 +321,8 @@ const generatePDFReport = (data: PDFData) => {
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   const vehicleConfig = [
+    ["Cabang", data.cabang || "-"],
+    ["PL Area", data.plArea || "-"],
     ["Tipe Kendaraan", PRODUCT_TYPES.find((p) => p.value === data.productType)?.label || data.productType],
     ["Harga Kendaraan", formatCurrency(data.calculations.vehiclePrice)],
     ["Registrasi", REGISTRATION_TYPES.find((r) => r.value === data.registration)?.label || data.registration],
@@ -549,6 +553,13 @@ const generatePDFReport = (data: PDFData) => {
 };
 
 const TCOCalculator = () => {
+  const [cabang, setCabang] = useState("");
+  const [cabangOptions, setCabangOptions] = useState<{ value: string; label: string }[]>([]);
+  const [plArea, setPlArea] = useState("");
+  const [plAreaOptions, setPlAreaOptions] = useState<{ value: string; label: string }[]>([]);
+  const [pricelist, setPricelist] = useState<number | null>(null);
+  const [isPricelistLoading, setIsPricelistLoading] = useState(false);
+  const [pricelistError, setPricelistError] = useState<string | null>(null);
   const [productType, setProductType] = useState("elf");
   const [registration, setRegistration] = useState("on-road");
   const [plateColor, setPlateColor] = useState("yellow");
@@ -560,7 +571,6 @@ const TCOCalculator = () => {
   const [insurance, setInsurance] = useState("0.07");
   const [interestRate, setInterestRate] = useState("0.17");
   const [leasePeriod, setLeasePeriod] = useState("5");
-  const [customPrice, setCustomPrice] = useState("");
   const [monthlyDriverSalary, setMonthlyDriverSalary] = useState("5000000");
   const [gasolinePrice, setGasolinePrice] = useState(DEFAULT_GASOLINE_PRICE.toString());
   const [fuelEfficiency, setFuelEfficiency] = useState(DEFAULT_FUEL_EFFICIENCY.toString());
@@ -593,9 +603,94 @@ const TCOCalculator = () => {
     }
   }, []);
 
+  // Load distinct Cabang and PL Area options from Supabase pricelist table
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const { data, error } = await supabaseClient
+          .from("pricelist")
+          .select('Cabang, "PL Area"');
+
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.error("Failed to load pricelist metadata", error);
+          return;
+        }
+
+        if (!data) return;
+
+        const cabangSet = new Set<string>();
+        const plAreaSet = new Set<string>();
+
+        for (const row of data as any[]) {
+          if (row.Cabang) cabangSet.add(row.Cabang as string);
+          if (row["PL Area"]) plAreaSet.add(row["PL Area"] as string);
+        }
+
+        const cabangValues = Array.from(cabangSet).sort();
+        const plAreaValues = Array.from(plAreaSet).sort();
+
+        setCabangOptions(cabangValues.map((value) => ({ value, label: value })));
+        setPlAreaOptions(plAreaValues.map((value) => ({ value, label: value })));
+
+        setCabang((prev) => prev || (cabangValues[0] ?? ""));
+        setPlArea((prev) => prev || (plAreaValues[0] ?? ""));
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Unexpected error loading pricelist metadata", err);
+      }
+    };
+
+    fetchMetadata();
+  }, []);
+
+  // Load pricelist amount for the selected Type, Cabang, and PL Area
+  useEffect(() => {
+    const fetchPricelist = async () => {
+      if (!productType || !cabang || !plArea) {
+        setPricelist(null);
+        return;
+      }
+
+      setIsPricelistLoading(true);
+      setPricelistError(null);
+
+      try {
+        const { data, error } = await supabaseClient
+          .from("pricelist")
+          .select("Pricelist")
+          .eq("Type", productType)
+          .eq("Cabang", cabang)
+          .eq("PL Area", plArea)
+          .maybeSingle();
+
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.error("Error fetching pricelist", error);
+          setPricelist(null);
+          setPricelistError("Gagal mengambil pricelist dari server.");
+        } else if (!data) {
+          setPricelist(null);
+          setPricelistError("Pricelist tidak ditemukan untuk kombinasi ini.");
+        } else {
+          const price = Number((data as any).Pricelist);
+          setPricelist(Number.isFinite(price) ? price : null);
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Unexpected error fetching pricelist", err);
+        setPricelist(null);
+        setPricelistError("Terjadi kesalahan saat mengambil data pricelist.");
+      } finally {
+        setIsPricelistLoading(false);
+      }
+    };
+
+    fetchPricelist();
+  }, [productType, cabang, plArea]);
+
   const calculations = useMemo(() => {
-    const selectedProduct = PRODUCT_TYPES.find((p) => p.value === productType);
-    const vehiclePrice = customPrice ? parseFloat(customPrice) : 0;
+    const vehiclePrice = pricelist ?? 0;
     const dpRate = parseFloat(downPayment);
     const depRate = parseFloat(depreciation);
     const insRate = parseFloat(insurance);
@@ -742,6 +837,7 @@ const TCOCalculator = () => {
       lifecycleYears,
     };
   }, [
+    pricelist,
     productType,
     downPayment,
     depreciation,
@@ -750,7 +846,6 @@ const TCOCalculator = () => {
     leasePeriod,
     lifecycle,
     kmPerYear,
-    customPrice,
     monthlyDriverSalary,
     gasolinePrice,
     fuelEfficiency,
@@ -893,17 +988,82 @@ const TCOCalculator = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="customPrice">Harga Kendaraan (IDR)</Label>
+                    <Label htmlFor="cabang">Cabang</Label>
+                    <Select
+                      value={cabang}
+                      onValueChange={setCabang}
+                      disabled={cabangOptions.length === 0}
+                    >
+                      <SelectTrigger id="cabang" className="bg-card">
+                        <SelectValue placeholder="Pilih cabang" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {cabangOptions.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>
+                            {c.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="plArea">PL Area</Label>
+                    <Select
+                      value={plArea}
+                      onValueChange={setPlArea}
+                      disabled={plAreaOptions.length === 0}
+                    >
+                      <SelectTrigger id="plArea" className="bg-card">
+                        <SelectValue placeholder="Pilih PL Area" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {plAreaOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="pricelist">Harga Kendaraan (IDR)</Label>
                     <Input
-                      id="customPrice"
-                      type="number"
-                      placeholder={`Default: ${formatCurrency(
-                        PRODUCT_TYPES.find((p) => p.value === productType)?.basePrice || 0
-                      )}`}
-                      value={customPrice}
-                      onChange={(e) => setCustomPrice(e.target.value)}
-                      className="bg-card"
+                      id="pricelist"
+                      type="text"
+                      value={
+                        isPricelistLoading
+                          ? "Memuat..."
+                          : pricelist !== null
+                          ? formatCurrency(pricelist)
+                          : ""
+                      }
+                      placeholder={
+                        productType && cabang && plArea
+                          ? "Pricelist tidak ditemukan"
+                          : "Pilih Tipe, Cabang, dan PL Area"
+                      }
+                      disabled
+                      className="bg-muted"
                     />
+                    {pricelistError && (
+                      <p className="text-xs text-red-500">{pricelistError}</p>
+                    )}
+                    {!pricelistError &&
+                      !isPricelistLoading &&
+                      productType &&
+                      cabang &&
+                      plArea &&
+                      pricelist === null && (
+                        <p className="text-xs text-muted-foreground">
+                          Pricelist tidak ditemukan untuk kombinasi ini.
+                        </p>
+                      )}
+                    <p className="text-xs text-muted-foreground">
+                      Harga diambil otomatis dari database pricelist berdasarkan Tipe,
+                      Cabang, dan PL Area.
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -1491,6 +1651,8 @@ const TCOCalculator = () => {
                       try {
                         setPdfStatusMessage("Menghasilkan laporan PDF...");
                         generatePDFReport({
+                          cabang,
+                          plArea,
                           productType,
                           registration,
                           plateColor,
@@ -1502,7 +1664,6 @@ const TCOCalculator = () => {
                           insurance,
                           interestRate,
                           leasePeriod,
-                          customPrice,
                           monthlyDriverSalary,
                           gasolinePrice,
                           fuelEfficiency,
