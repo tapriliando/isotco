@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseRestSelect } from "@/lib/supabaseClient";
 // Extend jsPDF type to include lastAutoTable
 declare module "jspdf" {
   interface jsPDF {
@@ -607,17 +607,18 @@ const TCOCalculator = () => {
   useEffect(() => {
     const fetchMetadata = async () => {
       try {
-        const { data, error } = await supabaseClient
-          .from("pricelist")
-          .select('Cabang, "PL Area"');
+        const { data, error } = await supabaseRestSelect<any[]>(
+          "pricelist",
+          {
+            select: 'Cabang,"PL Area"',
+          }
+        );
 
-        if (error) {
+        if (error || !data) {
           // eslint-disable-next-line no-console
           console.error("Failed to load pricelist metadata", error);
           return;
         }
-
-        if (!data) return;
 
         const cabangSet = new Set<string>();
         const plAreaSet = new Set<string>();
@@ -656,24 +657,27 @@ const TCOCalculator = () => {
       setPricelistError(null);
 
       try {
-        const { data, error } = await supabaseClient
-          .from("pricelist")
-          .select("Pricelist")
-          .eq("Type", productType)
-          .eq("Cabang", cabang)
-          .eq("PL Area", plArea)
-          .maybeSingle();
+        const { data, error } = await supabaseRestSelect<any[]>(
+          "pricelist",
+          {
+            select: "Pricelist",
+            Type: `eq.${productType}`,
+            Cabang: `eq.${cabang}`,
+            "PL Area": `eq.${plArea}`,
+            limit: "1",
+          }
+        );
 
-        if (error) {
+        if (error || !data) {
           // eslint-disable-next-line no-console
           console.error("Error fetching pricelist", error);
           setPricelist(null);
           setPricelistError("Gagal mengambil pricelist dari server.");
-        } else if (!data) {
+        } else if (!data.length) {
           setPricelist(null);
           setPricelistError("Pricelist tidak ditemukan untuk kombinasi ini.");
         } else {
-          const price = Number((data as any).Pricelist);
+          const price = Number(data[0]?.Pricelist);
           setPricelist(Number.isFinite(price) ? price : null);
         }
       } catch (err) {
