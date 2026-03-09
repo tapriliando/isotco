@@ -21,7 +21,7 @@ declare module "jspdf" {
 }
 import astraLogo from "@/assets/astra_logo.png";
 const PRODUCT_TYPES = [
-  { value: "TRAGA PICK UP (FD)", label: "TRAGA PICK UP (FD)", basePrice: '-' },
+  { value: "TRAGA FD E4", label: "TRAGA FD E4", basePrice: '-' },
   { value: "NMR", label: "NMR", basePrice: '-' },
   { value: "NMR L", label: "NMR L", basePrice: '-' },
   { value: "NMR B", label: "NMR B", basePrice: '-' },
