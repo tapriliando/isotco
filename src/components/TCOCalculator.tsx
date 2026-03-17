@@ -154,15 +154,6 @@ const CABANG_OPTIONS = [
   { value: "YOGYAKARTA", label: "YOGYAKARTA" },
 ];
 
-const APPLICATIONS = [
-  { value: "bus", label: "Bus" },
-  { value: "pickup", label: "Pickup" },
-  { value: "dump-truck", label: "Dump Truck" },
-  { value: "box-truck", label: "Box Truck" },
-  { value: "tanker", label: "Tanker" },
-  { value: "trailer", label: "Trailer" },
-];
-
 const LIFECYCLE_OPTIONS = [
   { value: "4", label: "4 Years" },
   { value: "5", label: "5 Years" },
@@ -349,6 +340,8 @@ type PDFData = {
   registration: string;
   plateColor: string;
   application: string;
+  province: string;
+  city: string;
   lifecycle: string;
   kmPerYear: string;
   downPayment: string;
@@ -424,7 +417,9 @@ const generatePDFReport = (data: PDFData) => {
     ["Harga Kendaraan", formatCurrency(data.calculations.vehiclePrice)],
     ["Registrasi", REGISTRATION_TYPES.find((r) => r.value === data.registration)?.label || data.registration],
     ["Warna Plat", PLATE_COLORS.find((p) => p.value === data.plateColor)?.label || data.plateColor],
-    ["Aplikasi", APPLICATIONS.find((a) => a.value === data.application)?.label || data.application],
+    ["Aplikasi", data.application || "-"],
+    ["Provinsi", data.province || "-"],
+    ["Kota/Kabupaten", data.city || "-"],
     ["Umur Operasional", `${data.lifecycle} Years`],
     ["Kilometer per Tahun", `${parseInt(data.kmPerYear).toLocaleString("id-ID")} km`],
   ];
@@ -667,7 +662,12 @@ const TCOCalculator = () => {
   const [productType, setProductType] = useState("");
   const [registration, setRegistration] = useState("on-road");
   const [plateColor, setPlateColor] = useState("yellow");
-  const [application, setApplication] = useState("pickup");
+  const [applicationOptions, setApplicationOptions] = useState<{ value: string; label: string }[]>([]);
+  const [application, setApplication] = useState("");
+  const [provinceOptions, setProvinceOptions] = useState<{ value: string; label: string }[]>([]);
+  const [province, setProvince] = useState("");
+  const [cityOptions, setCityOptions] = useState<{ value: string; label: string }[]>([]);
+  const [city, setCity] = useState("");
   const [lifecycle, setLifecycle] = useState("5");
   const [kmPerYear, setKmPerYear] = useState("60000");
   const [downPayment, setDownPayment] = useState("0.25");
@@ -710,7 +710,77 @@ const TCOCalculator = () => {
     }
   }, []);
 
-  // If needed in the future, product types can also be loaded from Supabase.
+  // Load application options from Supabase table "application" (column "Row Labels")
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const { data, error } = await supabaseRestSelect<any[]>("application", { select: "*" });
+        if (error || !data) {
+          console.error("Failed to load application list", error);
+          return;
+        }
+        const options = (data as any[])
+          .map((row) => {
+            const label = row["Row Labels"] ?? row.row_labels ?? "";
+            return { value: String(label), label: String(label) };
+          })
+          .filter((o) => o.value.trim() !== "");
+        setApplicationOptions(options);
+        if (options.length && !application) setApplication(options[0].value);
+      } catch (err) {
+        console.error("Unexpected error loading application list", err);
+      }
+    };
+    fetchApplications();
+  }, []);
+
+  // Load province options from Supabase table "province"
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      try {
+        const { data, error } = await supabaseRestSelect<any[]>("province", { select: "*" });
+        if (error || !data) {
+          console.error("Failed to load province list", error);
+          return;
+        }
+        const options = (data as any[])
+          .map((row) => {
+            const name = row.province ?? "";
+            return { value: String(name), label: String(name) };
+          })
+          .filter((o) => o.value.trim() !== "");
+        setProvinceOptions(options);
+        if (options.length && !province) setProvince(options[0].value);
+      } catch (err) {
+        console.error("Unexpected error loading province list", err);
+      }
+    };
+    fetchProvinces();
+  }, []);
+
+  // Load city options from Supabase table "cities"
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const { data, error } = await supabaseRestSelect<any[]>("cities", { select: "*" });
+        if (error || !data) {
+          console.error("Failed to load cities list", error);
+          return;
+        }
+        const options = (data as any[])
+          .map((row) => {
+            const name = row.cities ?? "";
+            return { value: String(name), label: String(name) };
+          })
+          .filter((o) => o.value.trim() !== "");
+        setCityOptions(options);
+        if (options.length && !city) setCity(options[0].value);
+      } catch (err) {
+        console.error("Unexpected error loading cities list", err);
+      }
+    };
+    fetchCities();
+  }, []);
 
   // Load pricelist amount for the selected Type, Cabang, and PL Area
   useEffect(() => {
@@ -1188,14 +1258,58 @@ const TCOCalculator = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="application">Aplikasi</Label>
-                    <Select value={application} onValueChange={setApplication}>
+                    <Select
+                      value={application}
+                      onValueChange={setApplication}
+                      disabled={applicationOptions.length === 0}
+                    >
                       <SelectTrigger id="application" className="bg-card">
-                        <SelectValue />
+                        <SelectValue placeholder="Pilih aplikasi" />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
-                        {APPLICATIONS.map((app) => (
+                        {applicationOptions.map((app) => (
                           <SelectItem key={app.value} value={app.value}>
                             {app.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="province">Provinsi</Label>
+                    <Select
+                      value={province}
+                      onValueChange={setProvince}
+                      disabled={provinceOptions.length === 0}
+                    >
+                      <SelectTrigger id="province" className="bg-card">
+                        <SelectValue placeholder="Pilih provinsi" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {provinceOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="city">Kota/Kabupaten</Label>
+                    <Select
+                      value={city}
+                      onValueChange={setCity}
+                      disabled={cityOptions.length === 0}
+                    >
+                      <SelectTrigger id="city" className="bg-card">
+                        <SelectValue placeholder="Pilih kota/kabupaten" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        {cityOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1766,6 +1880,8 @@ const TCOCalculator = () => {
                           registration,
                           plateColor,
                           application,
+                          province,
+                          city,
                           lifecycle,
                           kmPerYear,
                           downPayment,
