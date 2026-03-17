@@ -718,7 +718,12 @@ const TCOCalculator = () => {
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const { data, error } = await supabaseRestSelectCached<any[]>("application", { select: "row_labels", order: "row_labels.asc" });
+        const { data, error } = await supabaseRestSelectCached<any[]>("application", {
+          // Column name in Supabase is literally `Row Labels` (with space, capital R/L)
+          // so we must quote it for PostgREST.
+          select: "\"Row Labels\"",
+          order: "\"Row Labels\".asc",
+        });
         if (error || !data) {
           console.error("Failed to load application list", error);
           return;
