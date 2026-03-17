@@ -1261,10 +1261,9 @@ const TCOCalculator = () => {
                     <Select
                       value={application}
                       onValueChange={setApplication}
-                      disabled={applicationOptions.length === 0}
                     >
                       <SelectTrigger id="application" className="bg-card">
-                        <SelectValue placeholder="Pilih aplikasi" />
+                        <SelectValue placeholder={applicationOptions.length === 0 ? "Memuat..." : "Pilih aplikasi"} />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
                         {applicationOptions.map((app) => (
@@ -1281,10 +1280,9 @@ const TCOCalculator = () => {
                     <Select
                       value={province}
                       onValueChange={setProvince}
-                      disabled={provinceOptions.length === 0}
                     >
                       <SelectTrigger id="province" className="bg-card">
-                        <SelectValue placeholder="Pilih provinsi" />
+                        <SelectValue placeholder={provinceOptions.length === 0 ? "Memuat..." : "Pilih provinsi"} />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
                         {provinceOptions.map((opt) => (
@@ -1301,10 +1299,9 @@ const TCOCalculator = () => {
                     <Select
                       value={city}
                       onValueChange={setCity}
-                      disabled={cityOptions.length === 0}
                     >
                       <SelectTrigger id="city" className="bg-card">
-                        <SelectValue placeholder="Pilih kota/kabupaten" />
+                        <SelectValue placeholder={cityOptions.length === 0 ? "Memuat..." : "Pilih kota/kabupaten"} />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
                         {cityOptions.map((opt) => (
