@@ -787,66 +787,68 @@ const TCOCalculator = () => {
   }, []);
 
   // Load annual tax amount from Supabase table "tax"
+  // Debounced to avoid timeout when user changes multiple dropdowns quickly.
+  // Ensure public.tax has index: CREATE INDEX idx_tax_lookup ON public.tax (application, police_registration, province, cities, type);
   useEffect(() => {
-    const fetchTax = async () => {
-      // Require all key fields to be selected
-      if (!productType || !application || !plateColor || !province || !city) {
-        setAnnualTax(TAX_AMOUNT);
-        setTaxError(null);
-        return;
-      }
-
-      setIsTaxLoading(true);
+    if (!productType || !application || !plateColor || !province || !city) {
+      setAnnualTax(TAX_AMOUNT);
       setTaxError(null);
+      return;
+    }
 
-      // Map internal plate color to police_registration values
-      const policeRegistration =
-        plateColor === "yellow"
-          ? "Kuning"
-          : plateColor === "white"
-          ? "Putih"
-          : plateColor;
+    const timeoutId = window.setTimeout(() => {
+      const fetchTax = async () => {
+        setIsTaxLoading(true);
+        setTaxError(null);
 
-      try {
-        const { data, error } = await supabaseRestSelect<any[]>("tax", {
-          select: "tax",
-          application: `eq.${application}`,
-          police_registration: `eq.${policeRegistration}`,
-          province: `eq.${province}`,
-          cities: `eq.${city}`,
-          type: `eq.${productType}`,
-          limit: "1",
-        });
+        const policeRegistration =
+          plateColor === "yellow"
+            ? "Kuning"
+            : plateColor === "white"
+            ? "Putih"
+            : plateColor;
 
-        if (error || !data) {
-          // eslint-disable-next-line no-console
-          console.error("Error fetching tax", error);
-          setAnnualTax(TAX_AMOUNT);
-          setTaxError("Gagal mengambil pajak dari server, menggunakan nilai default.");
-        } else if (!data.length) {
-          setAnnualTax(TAX_AMOUNT);
-          setTaxError("Pajak tidak ditemukan untuk kombinasi ini, menggunakan nilai default.");
-        } else {
-          const value = Number((data[0] as any)?.tax);
-          if (Number.isFinite(value) && value >= 0) {
-            setAnnualTax(value);
-            setTaxError(null);
-          } else {
+        try {
+          const { data, error } = await supabaseRestSelect<any[]>("tax", {
+            select: "tax",
+            application: `eq.${application}`,
+            police_registration: `eq.${policeRegistration}`,
+            province: `eq.${province}`,
+            cities: `eq.${city}`,
+            type: `eq.${productType}`,
+            limit: "1",
+          });
+
+          if (error || !data) {
+            console.error("Error fetching tax", error);
             setAnnualTax(TAX_AMOUNT);
-            setTaxError("Nilai pajak tidak valid, menggunakan nilai default.");
+            setTaxError("Gagal mengambil pajak dari server, menggunakan nilai default.");
+          } else if (!data.length) {
+            setAnnualTax(TAX_AMOUNT);
+            setTaxError("Pajak tidak ditemukan untuk kombinasi ini, menggunakan nilai default.");
+          } else {
+            const value = Number((data[0] as any)?.tax);
+            if (Number.isFinite(value) && value >= 0) {
+              setAnnualTax(value);
+              setTaxError(null);
+            } else {
+              setAnnualTax(TAX_AMOUNT);
+              setTaxError("Nilai pajak tidak valid, menggunakan nilai default.");
+            }
           }
+        } catch (err) {
+          console.error("Unexpected error fetching tax", err);
+          setAnnualTax(TAX_AMOUNT);
+          setTaxError("Terjadi kesalahan saat mengambil pajak, menggunakan nilai default.");
+        } finally {
+          setIsTaxLoading(false);
         }
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("Unexpected error fetching tax", err);
-        setAnnualTax(TAX_AMOUNT);
-        setTaxError("Terjadi kesalahan saat mengambil pajak, menggunakan nilai default.");
-      } finally {
-        setIsTaxLoading(false);
-      }
-    };
+      };
 
-    fetchTax();
+      fetchTax();
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
   }, [productType, application, plateColor, province, city]);
 
   // Load pricelist amount for the selected Type, Cabang, and PL Area
