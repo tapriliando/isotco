@@ -21,15 +21,57 @@ declare module "jspdf" {
 }
 import astraLogo from "@/assets/astra_logo.png";
 const PRODUCT_TYPES = [
-  { value: "TRAGA FD E4", label: "TRAGA FD E4", basePrice: '-' },
-  { value: "NMR", label: "NMR", basePrice: '-' },
-  { value: "NMR L", label: "NMR L", basePrice: '-' },
-  { value: "NMR B", label: "NMR B", basePrice: '-' },
-  { value: "NLR", label: "NLR", basePrice: '-' },
-  { value: "GVR J", label: "GVR J", basePrice: '-' },
-  { value: "FVM U", label: "FVM U", basePrice: '-' },
-  { value: "FVM N", label: "FVM N", basePrice: '-' },
-  { value: "NMR H.D 5.8", label: "NMR H.D 5.8", basePrice: '-' },
+  { value: "[RTU] MICROBUS IAMI LONG E4", label: "[RTU] MICROBUS IAMI LONG E4", basePrice: "-" },
+  { value: "[RTU] MICROBUS IAMI SHORT E4", label: "[RTU] MICROBUS IAMI SHORT E4", basePrice: "-" },
+  {
+    value: "[RTU-IAMI] TRAGA BOX (SEMI AL.) E4",
+    label: "[RTU-IAMI] TRAGA BOX (SEMI AL.) E4",
+    basePrice: "-",
+  },
+  { value: "FRR Q E4", label: "FRR Q E4", basePrice: "-" },
+  { value: "FTR P E4", label: "FTR P E4", basePrice: "-" },
+  { value: "FTR S E4", label: "FTR S E4", basePrice: "-" },
+  { value: "FTR T E4", label: "FTR T E4", basePrice: "-" },
+  { value: "FVM N E4", label: "FVM N E4", basePrice: "-" },
+  { value: "FVM N Hi Power ABS E4", label: "FVM N Hi Power ABS E4", basePrice: "-" },
+  { value: "FVM U E4", label: "FVM U E4", basePrice: "-" },
+  { value: "FVM U Hi Power E4", label: "FVM U Hi Power E4", basePrice: "-" },
+  { value: "FVR L Dump E4", label: "FVR L Dump E4", basePrice: "-" },
+  { value: "FVR P E4", label: "FVR P E4", basePrice: "-" },
+  { value: "FVR Q E4", label: "FVR Q E4", basePrice: "-" },
+  { value: "FVR S E4", label: "FVR S E4", basePrice: "-" },
+  { value: "FVR U E4", label: "FVR U E4", basePrice: "-" },
+  { value: "FVZ L Hi Power Mixer E4", label: "FVZ L Hi Power Mixer E4", basePrice: "-" },
+  { value: "FVZ N Hi Power E4", label: "FVZ N Hi Power E4", basePrice: "-" },
+  {
+    value: "FVZ N HP E4 - SPEC. MINING",
+    label: "FVZ N HP E4 - SPEC. MINING",
+    basePrice: "-",
+  },
+  { value: "FVZ U Hi Power E4", label: "FVZ U Hi Power E4", basePrice: "-" },
+  { value: "GVR J E4", label: "GVR J E4", basePrice: "-" },
+  { value: "GVR J Hi Power ABS E4", label: "GVR J Hi Power ABS E4", basePrice: "-" },
+  { value: "GVZ K Hi Power ABS E4", label: "GVZ K Hi Power ABS E4", basePrice: "-" },
+  { value: "GXZ K ABS E4", label: "GXZ K ABS E4", basePrice: "-" },
+  { value: "NLR B E4", label: "NLR B E4", basePrice: "-" },
+  { value: "NLR B L E4", label: "NLR B L E4", basePrice: "-" },
+  { value: "NLR T E4", label: "NLR T E4", basePrice: "-" },
+  { value: "NLR T L E4", label: "NLR T L E4", basePrice: "-" },
+  { value: "NMR E4", label: "NMR E4", basePrice: "-" },
+  { value: "NMR HD 5.8 E4", label: "NMR HD 5.8 E4", basePrice: "-" },
+  { value: "NMR HD 6.5 E4", label: "NMR HD 6.5 E4", basePrice: "-" },
+  { value: "NMR L E4", label: "NMR L E4", basePrice: "-" },
+  { value: "NPS E4", label: "NPS E4", basePrice: "-" },
+  { value: "NQR B E4", label: "NQR B E4", basePrice: "-" },
+  { value: "TRAGA BUS E4", label: "TRAGA BUS E4", basePrice: "-" },
+  { value: "TRAGA CHASSIS BUS E4", label: "TRAGA CHASSIS BUS E4", basePrice: "-" },
+  { value: "TRAGA CHASSIS E4", label: "TRAGA CHASSIS E4", basePrice: "-" },
+  { value: "TRAGA FD E4", label: "TRAGA FD E4", basePrice: "-" },
+  {
+    value: "TRAGA FD E4 [BLACK PREMIUM]",
+    label: "TRAGA FD E4 [BLACK PREMIUM]",
+    basePrice: "-",
+  },
 ];
 
 const REGISTRATION_TYPES = [
@@ -40,6 +82,76 @@ const REGISTRATION_TYPES = [
 const PLATE_COLORS = [
   { value: "yellow", label: "Yellow Plate" },
   { value: "white", label: "White Plate" },
+];
+
+const PL_AREA_OPTIONS = [
+  { value: "BALI", label: "BALI" },
+  { value: "BODETABEK", label: "BODETABEK" },
+  { value: "DIY", label: "DIY" },
+  { value: "DKI", label: "DKI" },
+  { value: "JABAR", label: "JABAR" },
+  { value: "JAMBI", label: "JAMBI" },
+  { value: "JATENG", label: "JATENG" },
+  { value: "JATIM", label: "JATIM" },
+  { value: "KALSEL", label: "KALSEL" },
+  { value: "KALTIM", label: "KALTIM" },
+  { value: "LAMPUNG", label: "LAMPUNG" },
+  { value: "RIAU", label: "RIAU" },
+  { value: "SULSEL", label: "SULSEL" },
+  { value: "SULTRA", label: "SULTRA" },
+  { value: "SULUT", label: "SULUT" },
+  { value: "SUMBAR", label: "SUMBAR" },
+  { value: "SUMSEL", label: "SUMSEL" },
+  { value: "SUMUT", label: "SUMUT" },
+];
+
+const CABANG_OPTIONS = [
+  { value: "BALIKPAPAN", label: "BALIKPAPAN" },
+  { value: "BANDUNG", label: "BANDUNG" },
+  { value: "BANJARMASIN", label: "BANJARMASIN" },
+  { value: "BATURAJA", label: "BATURAJA" },
+  { value: "BOGOR", label: "BOGOR" },
+  { value: "CILEGON", label: "CILEGON" },
+  { value: "CILEUNGSI", label: "CILEUNGSI" },
+  { value: "CIPUTAT", label: "CIPUTAT" },
+  { value: "CIREBON", label: "CIREBON" },
+  { value: "DAAN MOGOT", label: "DAAN MOGOT" },
+  { value: "DELI SERDANG", label: "DELI SERDANG" },
+  { value: "DENPASAR", label: "DENPASAR" },
+  { value: "DURI", label: "DURI" },
+  { value: "GIANYAR", label: "GIANYAR" },
+  { value: "GSO & FLEET", label: "GSO & FLEET" },
+  { value: "HARAPAN INDAH", label: "HARAPAN INDAH" },
+  { value: "JAMBI", label: "JAMBI" },
+  { value: "KARAWANG", label: "KARAWANG" },
+  { value: "KENDARI", label: "KENDARI" },
+  { value: "LAMPUNG", label: "LAMPUNG" },
+  { value: "MAKASSAR", label: "MAKASSAR" },
+  { value: "MALANG", label: "MALANG" },
+  { value: "MANADO", label: "MANADO" },
+  { value: "MEDAN", label: "MEDAN" },
+  { value: "PADANG", label: "PADANG" },
+  { value: "PALEMBANG", label: "PALEMBANG" },
+  { value: "PASURUAN", label: "PASURUAN" },
+  { value: "PEKALONGAN", label: "PEKALONGAN" },
+  { value: "PEKANBARU", label: "PEKANBARU" },
+  { value: "PRABUMULIH", label: "PRABUMULIH" },
+  { value: "RANCAEKEK", label: "RANCAEKEK" },
+  { value: "SAMARINDA", label: "SAMARINDA" },
+  { value: "SANGATTA", label: "SANGATTA" },
+  { value: "SEMARANG", label: "SEMARANG" },
+  { value: "SIDRAP", label: "SIDRAP" },
+  { value: "SINGARAJA", label: "SINGARAJA" },
+  { value: "SOLO", label: "SOLO" },
+  { value: "SUKABUMI", label: "SUKABUMI" },
+  { value: "SUNTER", label: "SUNTER" },
+  { value: "SURABAYA - KOMBES DURYAT", label: "SURABAYA - KOMBES DURYAT" },
+  { value: "SURABAYA - MARGOMULYO", label: "SURABAYA - MARGOMULYO" },
+  { value: "SURABAYA - WARU", label: "SURABAYA - WARU" },
+  { value: "TANGERANG", label: "TANGERANG" },
+  { value: "TANJUNG", label: "TANJUNG" },
+  { value: "TULANG BAWANG", label: "TULANG BAWANG" },
+  { value: "YOGYAKARTA", label: "YOGYAKARTA" },
 ];
 
 const APPLICATIONS = [
@@ -91,26 +203,7 @@ const DEPRECIATION_OPTIONS = [
   { value: "0.25", label: "25%" },
 ];
 
-const INSURANCE_OPTIONS = [
-  { value: "0.07", label: "7%" },
-  { value: "0.055", label: "5.5%" },
-  { value: "0.05", label: "5%" },
-  { value: "0.045", label: "4.5%" },
-  { value: "0.04", label: "4%" },
-  { value: "0.035", label: "3.5%" },
-  { value: "0.03", label: "3%" },
-];
-
-const INTEREST_RATE_OPTIONS = [
-  { value: "0.13", label: "13%" },
-  { value: "0.14", label: "14%" },
-  { value: "0.15", label: "15%" },
-  { value: "0.16", label: "16%" },
-  { value: "0.17", label: "17%" },
-  { value: "0.19", label: "19%" },
-  { value: "0.21", label: "21%" },
-  { value: "0.23", label: "23%" },
-];
+// Insurance and interest rate will be entered manually as percentages by the user.
 
 const LEASE_PERIOD_OPTIONS = [
   { value: "3", label: "3 Years" },
@@ -225,6 +318,8 @@ type CalculationsResult = {
   totalTax: number;
   totalKm: number;
   totalMaintenance: number;
+  annualTireCost: number;
+  totalTireCost: number;
   totalDriverSalary: number;
   totalGasolineCost: number;
   totalMaintenanceBudget: number;
@@ -357,8 +452,8 @@ const generatePDFReport = (data: PDFData) => {
   const financialParams = [
     ["Down Payment", `${(parseFloat(data.downPayment) * 100).toFixed(0)}%`],
     ["Penyusutan", `${(parseFloat(data.depreciation) * 100).toFixed(0)}%`],
-    ["Insurance Rate", `${(parseFloat(data.insurance) * 100).toFixed(2)}%`],
-    ["Suku Bunga", `${(parseFloat(data.interestRate) * 100).toFixed(0)}%`],
+    ["Insurance Rate", `${parseFloat(data.insurance).toFixed(2)}%`],
+    ["Suku Bunga", `${parseFloat(data.interestRate).toFixed(0)}%`],
     ["Periode Sewa", `${data.leasePeriod} Years`],
     ["Pajak Tahunan", formatCurrency(TAX_AMOUNT)],
   ];
@@ -390,6 +485,12 @@ const generatePDFReport = (data: PDFData) => {
     ["Anggaran Service Tahunan", formatCurrency(parseFloat(data.annualServiceBudget))],
     ["Anggaran Part Tahunan", formatCurrency(parseFloat(data.annualPartBudget))],
     ["Anggaran Bahan Tahunan", formatCurrency(parseFloat(data.annualMaterialBudget))],
+    [
+      "Biaya Penggantian Ban per Tahun",
+      data.calculations.annualTireCost
+        ? formatCurrency(data.calculations.annualTireCost)
+        : "Not set",
+    ],
   ];
 
   autoTable(doc, {
@@ -555,14 +656,15 @@ const generatePDFReport = (data: PDFData) => {
 };
 
 const TCOCalculator = () => {
-  const [cabang, setCabang] = useState("");
-  const [cabangOptions, setCabangOptions] = useState<{ value: string; label: string }[]>([]);
-  const [plArea, setPlArea] = useState("");
-  const [plAreaOptions, setPlAreaOptions] = useState<{ value: string; label: string }[]>([]);
+  const [cabang, setCabang] = useState(CABANG_OPTIONS[0]?.value ?? "");
+  const [plArea, setPlArea] = useState(PL_AREA_OPTIONS[0]?.value ?? "");
+  const [productTypeOptions, setProductTypeOptions] = useState<{ value: string; label: string }[]>(
+    []
+  );
   const [pricelist, setPricelist] = useState<number | null>(null);
   const [isPricelistLoading, setIsPricelistLoading] = useState(false);
   const [pricelistError, setPricelistError] = useState<string | null>(null);
-  const [productType, setProductType] = useState("elf");
+  const [productType, setProductType] = useState("");
   const [registration, setRegistration] = useState("on-road");
   const [plateColor, setPlateColor] = useState("yellow");
   const [application, setApplication] = useState("pickup");
@@ -570,8 +672,9 @@ const TCOCalculator = () => {
   const [kmPerYear, setKmPerYear] = useState("60000");
   const [downPayment, setDownPayment] = useState("0.25");
   const [depreciation, setDepreciation] = useState("0.70");
-  const [insurance, setInsurance] = useState("0.07");
-  const [interestRate, setInterestRate] = useState("0.17");
+  // Store insurance and interest rate as percentage strings (e.g. "7" for 7%)
+  const [insurance, setInsurance] = useState("7");
+  const [interestRate, setInterestRate] = useState("17");
   const [leasePeriod, setLeasePeriod] = useState("5");
   const [monthlyDriverSalary, setMonthlyDriverSalary] = useState("5000000");
   const [gasolinePrice, setGasolinePrice] = useState(DEFAULT_GASOLINE_PRICE.toString());
@@ -579,6 +682,8 @@ const TCOCalculator = () => {
   const [annualServiceBudget, setAnnualServiceBudget] = useState("5000000");
   const [annualPartBudget, setAnnualPartBudget] = useState("3000000");
   const [annualMaterialBudget, setAnnualMaterialBudget] = useState("2000000");
+  const [tireReplacementCost, setTireReplacementCost] = useState("0");
+  const [tireReplacementMileage, setTireReplacementMileage] = useState("40000");
   const [serviceDiscountEnabled, setServiceDiscountEnabled] = useState(false);
   const [partDiscountEnabled, setPartDiscountEnabled] = useState(false);
   const [materialDiscountEnabled, setMaterialDiscountEnabled] = useState(false);
@@ -605,47 +710,7 @@ const TCOCalculator = () => {
     }
   }, []);
 
-  // Load distinct Cabang and PL Area options from Supabase pricelist table
-  useEffect(() => {
-    const fetchMetadata = async () => {
-      try {
-        const { data, error } = await supabaseRestSelect<any[]>(
-          "pricelist",
-          {
-            select: 'Cabang,"PL Area"',
-          }
-        );
-
-        if (error || !data) {
-          // eslint-disable-next-line no-console
-          console.error("Failed to load pricelist metadata", error);
-          return;
-        }
-
-        const cabangSet = new Set<string>();
-        const plAreaSet = new Set<string>();
-
-        for (const row of data as any[]) {
-          if (row.Cabang) cabangSet.add(row.Cabang as string);
-          if (row["PL Area"]) plAreaSet.add(row["PL Area"] as string);
-        }
-
-        const cabangValues = Array.from(cabangSet).sort();
-        const plAreaValues = Array.from(plAreaSet).sort();
-
-        setCabangOptions(cabangValues.map((value) => ({ value, label: value })));
-        setPlAreaOptions(plAreaValues.map((value) => ({ value, label: value })));
-
-        setCabang((prev) => prev || (cabangValues[0] ?? ""));
-        setPlArea((prev) => prev || (plAreaValues[0] ?? ""));
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("Unexpected error loading pricelist metadata", err);
-      }
-    };
-
-    fetchMetadata();
-  }, []);
+  // If needed in the future, product types can also be loaded from Supabase.
 
   // Load pricelist amount for the selected Type, Cabang, and PL Area
   useEffect(() => {
@@ -659,16 +724,14 @@ const TCOCalculator = () => {
       setPricelistError(null);
 
       try {
-        const { data, error } = await supabaseRestSelect<any[]>(
-          "pricelist",
-          {
-            select: "Pricelist",
-            Type: `eq.${productType}`,
-            Cabang: `eq.${cabang}`,
-            "PL Area": `eq.${plArea}`,
-            limit: "1",
-          }
-        );
+        const { data, error } = await supabaseRestSelect<any[]>("pricelist", {
+          // match new schema: product_type, cabang, pl_area, pricelist
+          select: "pricelist",
+          product_type: `eq.${productType}`,
+          cabang: `eq.${cabang}`,
+          pl_area: `eq.${plArea}`,
+          limit: "1",
+        });
 
         if (error || !data) {
           // eslint-disable-next-line no-console
@@ -679,8 +742,9 @@ const TCOCalculator = () => {
           setPricelist(null);
           setPricelistError("Pricelist tidak ditemukan untuk kombinasi ini.");
         } else {
-          const price = Number(data[0]?.Pricelist);
+          const price = Number((data[0] as any)?.pricelist);
           setPricelist(Number.isFinite(price) ? price : null);
+          setPricelistError(null);
         }
       } catch (err) {
         // eslint-disable-next-line no-console
@@ -699,8 +763,8 @@ const TCOCalculator = () => {
     const vehiclePrice = pricelist ?? 0;
     const dpRate = parseFloat(downPayment);
     const depRate = parseFloat(depreciation);
-    const insRate = parseFloat(insurance);
-    const intRate = parseFloat(interestRate);
+    const insRate = parseFloat(insurance) / 100 || 0;
+    const intRate = parseFloat(interestRate) / 100 || 0;
     const leaseYears = parseInt(leasePeriod);
     const lifecycleYears = parseInt(lifecycle);
     const annualKm = parseInt(kmPerYear);
@@ -710,6 +774,10 @@ const TCOCalculator = () => {
     const serviceBudget = annualServiceBudget ? parseFloat(annualServiceBudget) : 0;
     const partBudget = annualPartBudget ? parseFloat(annualPartBudget) : 0;
     const materialBudget = annualMaterialBudget ? parseFloat(annualMaterialBudget) : 0;
+    const tireCostPerReplacement = tireReplacementCost
+      ? parseFloat(tireReplacementCost)
+      : 0;
+    const tireMileage = tireReplacementMileage ? parseFloat(tireReplacementMileage) : 0;
 
     const serviceDiscRate =
       serviceDiscountEnabled && serviceDiscount ? parseFloat(serviceDiscount) / 100 : 0;
@@ -745,7 +813,17 @@ const TCOCalculator = () => {
     const totalDriverSalary = driverSalary * 12 * lifecycleYears;
     const totalGasolineCostBefore = (totalKm / fuelEff) * gasPrice;
     const totalMaintenanceBudget = annualMaintenanceTotal * lifecycleYears;
-    const totalMaintenance = totalMaintenanceBudget;
+
+    // Tire cost: annual cost based on annual km, then total over lifecycle
+    let annualTireCost = 0;
+    let totalTireCost = 0;
+    if (tireCostPerReplacement > 0 && tireMileage > 0 && annualKm > 0) {
+      const replacementsPerYear = annualKm / tireMileage;
+      annualTireCost = replacementsPerYear * tireCostPerReplacement;
+      totalTireCost = annualTireCost * lifecycleYears;
+    }
+
+    const totalMaintenance = totalMaintenanceBudget + totalTireCost;
 
     // Astra Isuzu advantages - savings
     let extendedWarrantySaving = 0;
@@ -761,7 +839,7 @@ const TCOCalculator = () => {
 
     const santunanSaving = santunanEnabled ? 20000000 : 0;
     const antiRustSaving = antiRustEnabled ? 3500000 : 0;
-    const outletEfficiencySaving = outletEfficiencyEnabled ? 150012000 : 0;
+    const outletEfficiencySaving = outletEfficiencyEnabled ? 45144000 : 0;
     const outletDowntimeSaving = outletDowntimeEnabled ? 1023867 : 0;
 
     const totalGasolineCostAfter = driverTrainingEnabled
@@ -822,6 +900,8 @@ const TCOCalculator = () => {
       totalTax,
       totalKm,
       totalMaintenance,
+      annualTireCost,
+      totalTireCost,
       totalDriverSalary,
       totalGasolineCost,
       totalMaintenanceBudget,
@@ -858,6 +938,8 @@ const TCOCalculator = () => {
     annualServiceBudget,
     annualPartBudget,
     annualMaterialBudget,
+    tireReplacementCost,
+    tireReplacementMileage,
     serviceDiscountEnabled,
     partDiscountEnabled,
     materialDiscountEnabled,
@@ -984,11 +1066,13 @@ const TCOCalculator = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
-                        {PRODUCT_TYPES.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
+                        {(productTypeOptions.length ? productTypeOptions : PRODUCT_TYPES).map(
+                          (type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -998,13 +1082,12 @@ const TCOCalculator = () => {
                     <Select
                       value={cabang}
                       onValueChange={setCabang}
-                      disabled={cabangOptions.length === 0}
                     >
                       <SelectTrigger id="cabang" className="bg-card">
                         <SelectValue placeholder="Pilih cabang" />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
-                        {cabangOptions.map((c) => (
+                        {CABANG_OPTIONS.map((c) => (
                           <SelectItem key={c.value} value={c.value}>
                             {c.label}
                           </SelectItem>
@@ -1018,13 +1101,12 @@ const TCOCalculator = () => {
                     <Select
                       value={plArea}
                       onValueChange={setPlArea}
-                      disabled={plAreaOptions.length === 0}
                     >
                       <SelectTrigger id="plArea" className="bg-card">
                         <SelectValue placeholder="Pilih PL Area" />
                       </SelectTrigger>
                       <SelectContent className="bg-card border-border">
-                        {plAreaOptions.map((option) => (
+                        {PL_AREA_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
@@ -1206,6 +1288,35 @@ const TCOCalculator = () => {
                     </div>
 
                     <div className="space-y-2">
+                      <Label htmlFor="tireReplacementCost">Penggantian Ban (IDR per sekali ganti)</Label>
+                      <Input
+                        id="tireReplacementCost"
+                        type="number"
+                        placeholder="Contoh: 5.000.000"
+                        value={tireReplacementCost}
+                        onChange={(e) => setTireReplacementCost(e.target.value)}
+                        className="bg-card"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="tireReplacementMileage">
+                        Mileage Penggantian Ban (km per sekali ganti)
+                      </Label>
+                      <Input
+                        id="tireReplacementMileage"
+                        type="number"
+                        placeholder="Contoh: 40.000"
+                        value={tireReplacementMileage}
+                        onChange={(e) => setTireReplacementMileage(e.target.value)}
+                        className="bg-card"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Jarak tempuh standar sebelum 1 kali penggantian ban.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
                       <Label htmlFor="annualServiceBudget">Service Budget (IDR/year)</Label>
                       <div className="flex items-center gap-2">
                         <Input
@@ -1356,35 +1467,27 @@ const TCOCalculator = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="insurance">Rate Asuransi</Label>
-                      <Select value={insurance} onValueChange={setInsurance}>
-                        <SelectTrigger id="insurance" className="bg-card">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-card border-border">
-                          {INSURANCE_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="insurance">Rate Asuransi (%)</Label>
+                      <Input
+                        id="insurance"
+                        type="number"
+                        placeholder="Contoh: 7"
+                        value={insurance}
+                        onChange={(e) => setInsurance(e.target.value)}
+                        className="bg-card"
+                      />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="interestRate">Suku Bunga</Label>
-                      <Select value={interestRate} onValueChange={setInterestRate}>
-                        <SelectTrigger id="interestRate" className="bg-card">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-card border-border">
-                          {INTEREST_RATE_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="interestRate">Suku Bunga (%)</Label>
+                      <Input
+                        id="interestRate"
+                        type="number"
+                        placeholder="Contoh: 17"
+                        value={interestRate}
+                        onChange={(e) => setInterestRate(e.target.value)}
+                        className="bg-card"
+                      />
                     </div>
 
                     <div className="space-y-2">
@@ -1525,7 +1628,7 @@ const TCOCalculator = () => {
                         </Label>
                         <p className="text-xs text-muted-foreground">
                           Mengurangi biaya operasional berkat outlet yang lebih dekat (hemat hingga Rp
-                          150.012.000 sepanjang lifecycle).
+                          45.144.000 sepanjang lifecycle).
                         </p>
                       </div>
                     </div>

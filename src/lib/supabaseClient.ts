@@ -1,8 +1,15 @@
 // Thin helpers around Supabase REST API without needing @supabase/supabase-js.
 // This avoids adding extra npm dependencies and works in both Netlify and local builds.
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ?? "";
+// In Vite, environment variables are exposed via import.meta.env, not process.env.
+const SUPABASE_URL =
+  (import.meta as any).env.VITE_SUPABASE_URL ??
+  (import.meta as any).env.NEXT_PUBLIC_SUPABASE_URL ??
+  "";
+const SUPABASE_KEY =
+  (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY ??
+  (import.meta as any).env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ??
+  "";
 
 export type SupabaseRestResult<T> =
   | { data: T; error: null }
