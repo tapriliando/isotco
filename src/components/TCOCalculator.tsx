@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { supabaseRestSelect } from "@/lib/supabaseClient";
+import { supabaseRestSelect, supabaseRestSelectCached } from "@/lib/supabaseClient";
 // Extend jsPDF type to include lastAutoTable
 declare module "jspdf" {
   interface jsPDF {
@@ -718,7 +718,7 @@ const TCOCalculator = () => {
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const { data, error } = await supabaseRestSelect<any[]>("application", { select: "*" });
+        const { data, error } = await supabaseRestSelectCached<any[]>("application", { select: "row_labels", order: "row_labels.asc" });
         if (error || !data) {
           console.error("Failed to load application list", error);
           return;
@@ -742,7 +742,7 @@ const TCOCalculator = () => {
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
-        const { data, error } = await supabaseRestSelect<any[]>("province", { select: "*" });
+        const { data, error } = await supabaseRestSelectCached<any[]>("province", { select: "province", order: "province.asc" });
         if (error || !data) {
           console.error("Failed to load province list", error);
           return;
@@ -766,7 +766,7 @@ const TCOCalculator = () => {
   useEffect(() => {
     const fetchCities = async () => {
       try {
-        const { data, error } = await supabaseRestSelect<any[]>("cities", { select: "*" });
+        const { data, error } = await supabaseRestSelectCached<any[]>("cities", { select: "cities", order: "cities.asc" });
         if (error || !data) {
           console.error("Failed to load cities list", error);
           return;

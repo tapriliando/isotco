@@ -58,3 +58,21 @@ export async function supabaseRestSelect<T>(
   }
 }
 
+// Module-level cache for static reference data (application, province, cities).
+// Persists for the browser session so remounts never re-hit Supabase.
+const _sessionCache = new Map<string, unknown>();
+
+export async function supabaseRestSelectCached<T>(
+  table: string,
+  params: Record<string, string>
+): Promise<SupabaseRestResult<T>> {
+  const cacheKey = `${table}:${JSON.stringify(params)}`;
+  if (_sessionCache.has(cacheKey)) {
+    return { data: _sessionCache.get(cacheKey) as T, error: null };
+  }
+  const result = await supabaseRestSelect<T>(table, params);
+  if (!result.error && result.data) {
+    _sessionCache.set(cacheKey, result.data);
+  }
+  return result;
+}
