@@ -202,7 +202,7 @@ const LEASE_PERIOD_OPTIONS = [
   { value: "5", label: "5 Years" },
 ];
 
-const TAX_AMOUNT = 1000000; // Fixed 1 million IDR
+const TAX_AMOUNT = 1000000; // Default/fallback tax amount (IDR)
 const DEFAULT_GASOLINE_PRICE = 6800; // Rp. 6800/liter
 const DEFAULT_FUEL_EFFICIENCY = 8; // km/liter (default assumption)
 
@@ -306,6 +306,7 @@ type CalculationsResult = {
   depreciationCost: number;
   annualInsurance: number;
   totalInsurance: number;
+  annualTax: number;
   totalTax: number;
   totalKm: number;
   totalMaintenance: number;
@@ -450,7 +451,7 @@ const generatePDFReport = (data: PDFData) => {
     ["Insurance Rate", `${parseFloat(data.insurance).toFixed(2)}%`],
     ["Suku Bunga", `${parseFloat(data.interestRate).toFixed(0)}%`],
     ["Periode Sewa", `${data.leasePeriod} Years`],
-    ["Pajak Tahunan", formatCurrency(TAX_AMOUNT)],
+    ["Pajak Tahunan", formatCurrency(data.calculations.annualTax)],
   ];
 
   autoTable(doc, {
@@ -700,6 +701,9 @@ const TCOCalculator = () => {
   const [pdfStatusMessage, setPdfStatusMessage] = useState<string | null>(null);
   const [clipboardStatusMessage, setClipboardStatusMessage] = useState<string | null>(null);
   const [isEmbedded, setIsEmbedded] = useState(false);
+  const [annualTax, setAnnualTax] = useState<number>(TAX_AMOUNT);
+  const [isTaxLoading, setIsTaxLoading] = useState(false);
+  const [taxError, setTaxError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -781,6 +785,69 @@ const TCOCalculator = () => {
     };
     fetchCities();
   }, []);
+
+  // Load annual tax amount from Supabase table "tax"
+  useEffect(() => {
+    const fetchTax = async () => {
+      // Require all key fields to be selected
+      if (!productType || !application || !plateColor || !province || !city) {
+        setAnnualTax(TAX_AMOUNT);
+        setTaxError(null);
+        return;
+      }
+
+      setIsTaxLoading(true);
+      setTaxError(null);
+
+      // Map internal plate color to police_registration values
+      const policeRegistration =
+        plateColor === "yellow"
+          ? "Kuning"
+          : plateColor === "white"
+          ? "Putih"
+          : plateColor;
+
+      try {
+        const { data, error } = await supabaseRestSelect<any[]>("tax", {
+          select: "tax",
+          application: `eq.${application}`,
+          police_registration: `eq.${policeRegistration}`,
+          province: `eq.${province}`,
+          cities: `eq.${city}`,
+          type: `eq.${productType}`,
+          limit: "1",
+        });
+
+        if (error || !data) {
+          // eslint-disable-next-line no-console
+          console.error("Error fetching tax", error);
+          setAnnualTax(TAX_AMOUNT);
+          setTaxError("Gagal mengambil pajak dari server, menggunakan nilai default.");
+        } else if (!data.length) {
+          setAnnualTax(TAX_AMOUNT);
+          setTaxError("Pajak tidak ditemukan untuk kombinasi ini, menggunakan nilai default.");
+        } else {
+          const value = Number((data[0] as any)?.tax);
+          if (Number.isFinite(value) && value >= 0) {
+            setAnnualTax(value);
+            setTaxError(null);
+          } else {
+            setAnnualTax(TAX_AMOUNT);
+            setTaxError("Nilai pajak tidak valid, menggunakan nilai default.");
+          }
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Unexpected error fetching tax", err);
+        setAnnualTax(TAX_AMOUNT);
+        setTaxError("Terjadi kesalahan saat mengambil pajak, menggunakan nilai default.");
+      } finally {
+        setIsTaxLoading(false);
+      }
+    };
+
+    fetchTax();
+  }, [productType, application, plateColor, province, city]);
 
   // Load pricelist amount for the selected Type, Cabang, and PL Area
   useEffect(() => {
@@ -876,7 +943,7 @@ const TCOCalculator = () => {
     const annualInsurance = vehiclePrice * insRate;
     const totalInsurance = annualInsurance * lifecycleYears;
 
-    const totalTax = TAX_AMOUNT * lifecycleYears;
+    const totalTax = annualTax * lifecycleYears;
     const totalKm = annualKm * lifecycleYears;
 
     // Operational costs
@@ -967,6 +1034,7 @@ const TCOCalculator = () => {
       depreciationCost,
       annualInsurance,
       totalInsurance,
+      annualTax,
       totalTax,
       totalKm,
       totalMaintenance,
@@ -1022,6 +1090,7 @@ const TCOCalculator = () => {
     antiRustEnabled,
     outletEfficiencyEnabled,
     outletDowntimeEnabled,
+    annualTax,
   ]);
 
   return (
@@ -1620,10 +1689,16 @@ const TCOCalculator = () => {
                     <div className="space-y-2">
                       <Label>Tax (Annual)</Label>
                       <Input
-                        value={formatCurrency(TAX_AMOUNT)}
+                        value={formatCurrency(annualTax)}
                         disabled
                         className="bg-muted"
                       />
+                      {isTaxLoading && (
+                        <p className="text-xs text-muted-foreground">Memuat pajak...</p>
+                      )}
+                      {taxError && !isTaxLoading && (
+                        <p className="text-xs text-red-500">{taxError}</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
