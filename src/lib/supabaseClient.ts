@@ -76,3 +76,127 @@ export async function supabaseRestSelectCached<T>(
   }
   return result;
 }
+
+const AUTH_STORAGE_KEY = "isotco.auth.session";
+const INTERNAL_EMAIL_DOMAIN =
+  (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.VITE_INTERNAL_AUTH_DOMAIN ??
+  "internal.local";
+
+type SupabaseAuthUser = {
+  id: string;
+  email: string;
+  user_metadata?: Record<string, unknown>;
+};
+
+export type SupabaseAuthSession = {
+  access_token: string;
+  refresh_token: string;
+  expires_at?: number;
+  expires_in?: number;
+  token_type?: string;
+  user: SupabaseAuthUser;
+};
+
+type SupabaseAuthResponse = {
+  access_token: string;
+  refresh_token: string;
+  expires_at?: number;
+  expires_in?: number;
+  token_type?: string;
+  user: SupabaseAuthUser;
+};
+
+export function usernameToInternalEmail(username: string): string {
+  return `${username.trim()}@${INTERNAL_EMAIL_DOMAIN}`;
+}
+
+export function getStoredAuthSession(): SupabaseAuthSession | null {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as SupabaseAuthSession;
+  } catch {
+    return null;
+  }
+}
+
+function saveAuthSession(session: SupabaseAuthSession) {
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+}
+
+export function clearStoredAuthSession() {
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+}
+
+export function isAuthSessionValid(session: SupabaseAuthSession | null): boolean {
+  if (!session?.access_token) return false;
+  if (!session.expires_at) return true;
+  const nowInSeconds = Math.floor(Date.now() / 1000);
+  return session.expires_at > nowInSeconds;
+}
+
+export async function signInWithUsernamePassword(
+  username: string,
+  password: string
+): Promise<SupabaseRestResult<SupabaseAuthSession>> {
+  try {
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      throw new Error("Missing Supabase URL or key.");
+    }
+
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername || !password) {
+      throw new Error("Username and password are required.");
+    }
+
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: {
+        ...getSupabaseHeaders(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: usernameToInternalEmail(trimmedUsername),
+        password,
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Login failed (${response.status}): ${text}`);
+    }
+
+    const data = (await response.json()) as SupabaseAuthResponse;
+    const session: SupabaseAuthSession = {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: data.expires_at,
+      expires_in: data.expires_in,
+      token_type: data.token_type,
+      user: data.user,
+    };
+    saveAuthSession(session);
+    return { data: session, error: null };
+  } catch (err) {
+    return { data: null, error: err instanceof Error ? err : new Error(String(err)) };
+  }
+}
+
+export async function signOut(): Promise<void> {
+  const session = getStoredAuthSession();
+  clearStoredAuthSession();
+
+  if (!session?.access_token || !SUPABASE_URL || !SUPABASE_KEY) return;
+
+  try {
+    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+      method: "POST",
+      headers: {
+        ...getSupabaseHeaders(),
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+  } catch {
+    // Ignore logout network errors; local session is already cleared.
+  }
+}
