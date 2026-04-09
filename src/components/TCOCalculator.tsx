@@ -1097,10 +1097,10 @@ const TCOCalculator = () => {
           return 45144000;
       }
     })();
-    const outletDowntimeSaving = outletDowntimeEnabled ? 1023867 : 0;
+    const outletDowntimeSaving = outletDowntimeEnabled ? 1228000 : 0;
 
     const totalGasolineCostAfter = driverTrainingEnabled
-      ? totalGasolineCostBefore * 0.82
+      ? totalGasolineCostBefore * 0.85
       : totalGasolineCostBefore;
     const driverTrainingSaving = totalGasolineCostBefore - totalGasolineCostAfter;
 
@@ -1242,7 +1242,7 @@ const TCOCalculator = () => {
                 </h1>
                 {!isEmbedded && (
                   <p className="text-muted-foreground text-sm md:text-base leading-snug">
-                    Total Cost of Ownership Calculator for Product and Service of Astra Isuzu dealership
+                    Total Cost of Ownership Calculator for Product and Service of Astra Isuzu 
                   </p>
                 )}
               </div>
@@ -1985,7 +1985,7 @@ const TCOCalculator = () => {
                           Pelatihan Pengemudi
                         </Label>
                         <p className="text-xs text-muted-foreground">
-                          Mengurangi biaya BBM hingga 18% berkat cara mengemudi yang lebih efisien.
+                          Mengurangi biaya BBM hingga 15% berkat cara mengemudi yang lebih efisien.
                         </p>
                       </div>
                     </div>
@@ -2045,7 +2045,7 @@ const TCOCalculator = () => {
                       />
                       <div>
                         <Label htmlFor="outletEfficiencyEnabled" className="font-medium">
-                          Jaringan Outlet – Efisiensi Jarak
+                          Jaringan Astra Isuzu (Outlet, AFS, BIB, BMI)
                         </Label>
                         <p className="text-xs text-muted-foreground">
                           Mengurangi biaya operasional berkat outlet yang lebih dekat{" "}
@@ -2087,10 +2087,10 @@ const TCOCalculator = () => {
                       />
                       <div>
                         <Label htmlFor="outletDowntimeEnabled" className="font-medium">
-                          Jaringan Outlet – Hindari Downtime
+                          Physical Availability Lebih Unggul
                         </Label>
                         <p className="text-xs text-muted-foreground">
-                          Menekan biaya downtime hingga Rp 1.023.867 berkat perbaikan yang lebih cepat.
+                          Menekan biaya downtime hingga Rp 1.228.000 berkat perbaikan yang lebih cepat.
                         </p>
                       </div>
                     </div>
